@@ -1165,7 +1165,20 @@ function connectHC2() {
   "https://keno-server-20g6.onrender.com",
   { transports: ["websocket", "polling"] }
 );
-  hc2Socket.on("connect", () => showToast("Connected to game server"));
+  
+hc2Socket.on("connect", () => {
+  const params = new URLSearchParams(window.location.search);
+  const userId = params.get("userId") || "guest_user";
+
+  hc2Socket.emit("initUser", {
+    userId: userId,
+    name: "Hit Coins 2 Player",
+    phone: ""
+  });
+
+  showToast("Connected to game server");
+});
+
   hc2Socket.on("connect_error", (err) => {
   console.error("SOCKET CONNECTION ERROR:", err.message);
   showToast("Connection error: " + err.message);
