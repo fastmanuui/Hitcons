@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Hit Coins 2 — UI Prototype</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Shared gradients for the control-button icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff7b8"/>
+      <stop offset=".5" stop-color="#ffd24a"/>
+      <stop offset="1" stop-color="#e08a00"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<main class="game" aria-label="Hit Coins game interface">
+  <div class="reel-frame">
+    <div class="reels" id="reels">
+      <div class="reel" data-reel="0"><div class="symbols"></div></div>
+      <div class="reel" data-reel="1"><div class="symbols"></div></div>
+      <div class="reel" data-reel="2"><div class="symbols"></div></div>
+    </div>
+  </div>
+
+  <div class="win-banner" id="winBanner" aria-live="polite"></div>
+  <div class="controls">
+    <!-- Settings -->
+    <button class="ctl side-btn menu" id="menu" aria-label="Settings">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".6" stroke-linejoin="round">
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(45 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(90 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(135 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(180 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(225 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(270 12 12)"/>
+          <rect x="10.3" y="1.6" width="3.4" height="5" rx="1" transform="rotate(315 12 12)"/>
+          <path fill-rule="evenodd" d="M12 4.9a7.1 7.1 0 1 0 0 14.2 7.1 7.1 0 1 0 0-14.2zm0 4.5a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 1 1 0-5.2z"/>
+        </g>
+      </svg>
+      <em>SETTINGS</em>
+    </button>
+
+    <!-- Bet amount -->
+    <button class="ctl small-btn bet" id="bet" aria-label="Bet amount">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".7" stroke-linejoin="round">
+          <path d="M4.5 15.5v3c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-3c0 1.7-3.4 3-7.5 3s-7.5-1.3-7.5-3z"/>
+          <path d="M4.5 10.5v3c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-3c0 1.7-3.4 3-7.5 3s-7.5-1.3-7.5-3z"/>
+          <path d="M4.5 5.5v3c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-3c0 1.7-3.4 3-7.5 3s-7.5-1.3-7.5-3z"/>
+          <ellipse cx="12" cy="5.5" rx="7.5" ry="3"/>
+          <ellipse cx="12" cy="5.5" rx="4.2" ry="1.4" fill="#ffe27a" stroke="none"/>
+        </g>
+      </svg>
+      <em>BET</em>
+    </button>
+
+    <!-- Spin / Stop -->
+    <button class="spin" id="spin" aria-label="Spin"><span>⟳</span></button>
+
+    <!-- Auto spin -->
+    <button class="ctl small-btn autoplay" id="autoplay" aria-label="Auto spin">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="auto-arrows" fill="none" stroke="url(#goldGrad)" stroke-width="2.3" stroke-linecap="round">
+          <path d="M20 12a8 8 0 0 1-13.6 5.7"/>
+          <path d="M4 12a8 8 0 0 1 13.6-5.7"/>
+        </g>
+        <path d="M18.4 2.6v5.2h-5.2z" fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".5" stroke-linejoin="round"/>
+        <path d="M5.6 21.4v-5.2h5.2z" fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".5" stroke-linejoin="round"/>
+        <path d="M10 8.7v6.6l5.5-3.3z" fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".6" stroke-linejoin="round"/>
+      </svg>
+      <em>AUTO</em>
+      <b class="badge" id="autoCount" aria-hidden="true"></b>
+    </button>
+
+    <!-- Fast spin -->
+    <button class="ctl side-btn fast" id="fast" aria-label="Fast spin">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="chev" fill="url(#goldGrad)" stroke="#8a4300" stroke-width=".7" stroke-linejoin="round">
+          <path d="M3.5 5.2l8 6.8-8 6.8z"/>
+          <path d="M12.5 5.2l8 6.8-8 6.8z"/>
+        </g>
+      </svg>
+      <em>FAST</em>
+    </button>
+  </div>
+  <div class="status">
+    <div class="level">♛<small>21</small></div>
+    <div class="balance"><span>▣</span> ETB <b id="balance">0.64</b></div>
+    <div class="bet-value">ETB <b id="betValue">10.00</b> <span>▤</span></div>
+  </div>
+  <div class="footer"><span>⌂</span> <b>Hit Coins 2 Hold and Spin</b><time class="time" id="clock">--:--</time><span>▯</span></div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- Full-page Hold & Spin bonus (own page + matching purple UI) -->
+  <div class="bonus-page" id="bonusPage" hidden aria-hidden="true">
+    <div class="bonus-bg"></div>
+    <div class="bonus-jackpots">
+      <div class="jp jp-grand"><span> </span><b> </b></div>
+      <div class="jp jp-major"><span> </span><b> </b></div>
+      <div class="jp jp-minor"><span> </span><b> </b></div>
+      <div class="jp jp-mini"><span> </span><b> </b></div>
+    </div>
+    <div class="bonus-logo">
+      <div class="coin-pile"> </div>
+      <div class="logo-two"> </div>
+      <div class="logo-title"> </div>
+    </div>
+    <div class="hold-frame">
+      <div class="collector-board" id="collectorBoard">
+        <div class="bonus-column" id="leftColumn"></div>
+        <div class="bonus-column collector-column" id="midColumn"></div>
+        <div class="bonus-column" id="rightColumn"></div>
+      </div>
+    </div>
+    <div class="bonus-spin-info">
+      <div class="respins-badge"><span class="respins-icon">⟳</span> <b id="respinsCount">3</b> RE-SPINS</div>
+    </div>
+    <div class="bonus-controls">
+      <button type="button" class="bonus-spin-btn" id="bonusSpinBtn" aria-label="Spin bonus">
+        <span class="bonus-spin-icon">⟳</span>
+      </button>
+    </div>
+    <div class="bonus-footer">
+      <span class="bonus-total">TOTAL <b id="bonusTotal">0</b></span>
+      <button type="button" class="bonus-collect" id="bonusCollectBtn" hidden>COLLECT</button>
+    </div>
+  </div>
+</main>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script>window.HC2_SOCKET_URL = window.HC2_SOCKET_URL || location.origin;</script>
+<script src="app.js"></script>
+</body>
+</html>
