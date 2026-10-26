@@ -46,9 +46,9 @@ const COLLECT_MATH = {
 };
 // Relative chance of each coin landing in the bonus (bigger = more common).
 const COLLECT_COIN_WEIGHTS = {
-  "coin_1.png": 1.5, "coin_2.png": 1.3, "coin_5.png": 1,
-  "coin_10.png": 0.8, "coin_15.png": 0.5,
-  "crown_coin.png": 1.5,
+  "coin_1.png": 1.5, "coin_2.png": 1.3, "coin_5.png": 0.8,
+  "coin_10.png": 0.5, "coin_15.png": 0.5,
+  "crown_coin.png": 0,
   "mini.png": 0.3, "minor.png": 0.2, "major.png": 0.1, "grand.png": 0.01
 };
 
@@ -59,9 +59,8 @@ const PAYOUTS = {
 };
 const BET_AMOUNTS = [
   2, 4, 6, 8, 10, 16, 20, 40, 60, 80, 100, 140, 160, 200,
-  240, 280, 300, 340, 360, 400,
-  ...Array.from({length: 30}, (_, i) => 420 + i * 20)
-];
+  240, 280, 300, 340, 360, 400,450,500,600,700,800,900,1000];
+  
 const PAYLINES = [
   [[1, 0], [1, 1], [1, 2]], // middle
   [[0, 0], [0, 1], [0, 2]], // top
@@ -1030,7 +1029,7 @@ function renderSettings(view) {
 function previewSymbols(reelIndex, session) {
   // While the last reel is "teasing", coins flicker past so the player can hope.
   const teasing = session.anticipating && reelIndex === session.third;
-  return Array.from({length: 3}, () => (teasing && Math.random() < 0.15) ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+  return Array.from({length: 3}, () => (teasing && Math.random() < 0.8) ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
 }
 function clearSession(session) {
   session.intervals.forEach(clearInterval);
@@ -1115,7 +1114,7 @@ function isBigWin(wins) {
   const hasPremium = wins.some(w => ["sevens.png", "stars.png"].includes(w.symbol));
   const midTierWays = wins.filter(w => ["bells.png", "watermelon.png", "grapes.png"].includes(w.symbol)).length;
   const fruitWays = wins.filter(w => ["cherries.png", "lemon.png", "orange.png"].includes(w.symbol)).length;
-  return hasPremium || midTierWays >= 2 || fruitWays >= 4;
+  return hasPremium || midTierWays >= 2 || fruitWays,>= 5;
 }
 
 function finishSpin(session) {
@@ -1154,7 +1153,7 @@ function finishSpin(session) {
   if (auto) {
     if (autoRemaining <= 0) stopAuto("Auto spin finished");
     else if (balance < betAmount) stopAuto("Auto spin stopped — balance too low");
-    else scheduleAuto(payout > 0 ? 1100 : (fastMode ? 250 : 450));
+    else scheduleAuto(payout > 0 ? 1100 : (fastMode ? 250 : 410));
   }
 }
 
@@ -1201,7 +1200,7 @@ hc2Socket.on("connect", () => {
     const session=activeSpin; pendingRequestId=null;
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
-    const durations=fastMode?[270,360,450]:[570,650,740];
+    const durations=fastMode?[235,335,430]:[470,550,640];
     reels.forEach((reel,i)=>{
       session.reelTimers[i]=setTimeout(()=>landReel(session,i),durations.slice(0,i+1).reduce((a,v)=>a+v,0));
     });
@@ -1244,8 +1243,8 @@ function spin() {
 function fillReels() {
   const startingGrid = [
     ["coin_10.png", "lemon.png", "bells.png"],
-    ["crown_coin.png", "plum.png", "watermelon.png"],
-    ["cherries.png", "grand.png", "stars.png"]
+    ["plum.png","crown_coin.png", "watermelon.png"],
+    ["cherries.png", "stars.png", "grand.png"]
   ];
   reels.forEach((reel, i) => setReelSymbols(reel, startingGrid[i]));
 }
