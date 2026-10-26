@@ -1176,7 +1176,7 @@ hc2Socket.on("connect", () => {
     phone: ""
   });
 
-  showToast("Connected to game server");
+  showToast("Connected");
 });
 
   hc2Socket.on("connect_error", (err) => {
