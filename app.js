@@ -1161,7 +1161,10 @@ function finishSpin(session) {
 let hc2Socket = null, pendingRequestId = null, requestCounter = 0;
 function connectHC2() {
   if (typeof window.io !== "function") { showToast("Socket.IO client failed to load"); return; }
-  hc2Socket = window.io(window.HC2_SOCKET_URL || location.origin, { transports:["websocket","polling"] });
+  hc2Socket = window.io(
+  "https://keno-server-20g6.onrender.com",
+  { transports: ["websocket", "polling"] }
+);
   hc2Socket.on("connect", () => showToast("Connected to game server"));
   hc2Socket.on("connect_error", () => showToast("Cannot connect to game server"));
   hc2Socket.on("hc2Error", msg => {
