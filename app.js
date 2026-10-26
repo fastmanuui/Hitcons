@@ -1206,6 +1206,12 @@ hc2Socket.on("connect", () => {
       session.reelTimers[i]=setTimeout(()=>landReel(session,i),durations.slice(0,i+1).reduce((a,v)=>a+v,0));
     });
   });
+ hc2Socket.on("balanceUpdate", (data) => {
+    if (data && typeof data.balance === "number") {
+       balance = data.balance;
+       updateBalance();
+    }
+});
 }
 connectHC2();
 
