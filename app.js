@@ -1166,7 +1166,14 @@ function connectHC2() {
   { transports: ["websocket", "polling"] }
 );
   hc2Socket.on("connect", () => showToast("Connected to game server"));
-  hc2Socket.on("connect_error", () => showToast("Cannot connect to game server"));
+  hc2Socket.on("connect_error", (err) => {
+  console.error("SOCKET CONNECTION ERROR:", err.message);
+  showToast("Connection error: " + err.message);
+});
+
+hc2Socket.on("connect", () => {
+  console.log("Connected to game server:", hc2Socket.id);
+});
   hc2Socket.on("hc2Error", msg => {
     if (msg && msg.requestId && msg.requestId !== pendingRequestId) return;
     if (activeSpin) { clearSession(activeSpin); activeSpin = null; }
