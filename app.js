@@ -46,9 +46,9 @@ const COLLECT_MATH = {
 };
 // Relative chance of each coin landing in the bonus (bigger = more common).
 const COLLECT_COIN_WEIGHTS = {
-  "coin_1.png": 1.5, "coin_2.png": 1.3, "coin_5.png": 0.8,
-  "coin_10.png": 0.5, "coin_15.png": 0.5,
-  "crown_coin.png": 0,
+  "coin_1.png": 1.5, "coin_2.png": 1.3, "coin_5.png": 1,
+  "coin_10.png": 0.8, "coin_15.png": 0.5,
+  "crown_coin.png": 1.5,
   "mini.png": 0.3, "minor.png": 0.2, "major.png": 0.1, "grand.png": 0.01
 };
 
@@ -59,8 +59,9 @@ const PAYOUTS = {
 };
 const BET_AMOUNTS = [
   2, 4, 6, 8, 10, 16, 20, 40, 60, 80, 100, 140, 160, 200,
-  240, 280, 300, 340, 360, 400,450,500,600,700,800,900,1000];
-  
+  240, 280, 300, 340, 360, 400,
+  ...Array.from({length: 30}, (_, i) => 420 + i * 20)
+];
 const PAYLINES = [
   [[1, 0], [1, 1], [1, 2]], // middle
   [[0, 0], [0, 1], [0, 2]], // top
@@ -200,6 +201,128 @@ const symbolPreloads = symbols.map(name => {
   return image;
 });
 
+/* Startup gate: decode every local image before revealing the game. */
+const BOOT_ASSET_MANIFEST = [ "bells.png", "bonus_bg.png", "cherries.png", "clean-background.png","coin_1.png", "coin_10.png", "coin_15.png", "coin_2.png", "coin_5.png", "crown_coin.png", "grand.png", "grapes.png", "lemon.png", "major.png", "mini.png", "minor.png", "orange.png",  "plum.png",reference-background.png", "reference-symbol-sheet.png", "sevens.png", "watermelon.png"];
+let bootAssetsReady = false;
+let bootServerReady = false;
+let bootStarted = false;
+let bootFailedAssets = [];
+let bootLoadToken = 0;
+function setBootCheck(id, state, detail, label) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.classList.toggle("is-ready", state === "ready");
+  row.classList.toggle("is-error", state === "error");
+  const icon = row.querySelector(".startup-check-icon");
+  const small = row.querySelector("small");
+  const em = row.querySelector("em");
+  if (icon) icon.textContent = state === "ready" ? "✓" : state === "error" ? "!" : "◌";
+  if (small && detail) small.textContent = detail;
+  if (em && label) em.textContent = label;
+}
+function updateBootProgress(done, total, label) {
+  const percent = total ? Math.round(done / total * 100) : 0;
+  const fill = document.getElementById("startupProgressFill");
+  const value = document.getElementById("startupProgressPercent");
+  const text = document.getElementById("startupProgressLabel");
+  const detail = document.getElementById("startupAssetsDetail");
+  if (fill) fill.style.width = percent + "%";
+  if (value) value.textContent = percent + "%";
+  if (text) text.textContent = label || "Loading game assets…";
+  if (detail) detail.textContent = `${done} of ${total} graphics loaded and decoded`;
+}
+function updateBootServer(connected) {
+  bootServerReady = Boolean(connected);
+  setBootCheck("startupServerCheck", bootServerReady ? "ready" : "waiting",
+    bootServerReady ? "Live game server connection established" : "Waiting for a live game server connection",
+    bootServerReady ? "CONNECTED" : "CONNECTING");
+  if (!bootServerReady) {
+    const retry = document.getElementById("startupRetry");
+    if (retry && bootAssetsReady) retry.hidden = false;
+  }
+  tryFinishBoot();
+}
+function tryFinishBoot() {
+  if (!bootAssetsReady || !bootServerReady) return;
+  const screen = document.getElementById("startupScreen");
+  if (!screen || screen.classList.contains("is-leaving")) return;
+  const label = document.getElementById("startupProgressLabel");
+  if (label) label.textContent = "Everything is ready — entering game…";
+  screen.classList.add("is-leaving");
+  window.setTimeout(() => {
+    screen.hidden = true;
+    document.body.classList.add("game-ready");
+  }, 650);
+}
+async function preloadBootAssets() {
+  if (bootStarted) return;
+  bootStarted = true;
+  const token = ++bootLoadToken;
+  const retry = document.getElementById("startupRetry");
+  if (retry) retry.hidden = true;
+  bootFailedAssets = [];
+  bootAssetsReady = false;
+  setBootCheck("startupAssetsCheck", "waiting", "Loading and decoding graphics", "LOADING");
+  updateBootProgress(0, BOOT_ASSET_MANIFEST.length, "Preparing game graphics…");
+  let done = 0;
+  const failures = [];
+  await Promise.all(BOOT_ASSET_MANIFEST.map(async (name) => {
+    try {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = "assets/" + name;
+      if (typeof image.decode === "function") {
+        await image.decode();
+      } else {
+        await new Promise((resolve, reject) => {
+          if (image.complete && image.naturalWidth > 0) return resolve();
+          image.onload = resolve;
+          image.onerror = reject;
+        });
+      }
+      if (!image.naturalWidth) throw new Error("Image has no decoded pixels");
+    } catch (err) {
+      failures.push(name);
+      console.error("[Hit Coins 2] Startup asset failed:", name, err);
+    } finally {
+      done++;
+      if (token === bootLoadToken) updateBootProgress(done, BOOT_ASSET_MANIFEST.length, "Preparing game graphics…");
+    }
+  }));
+  if (token !== bootLoadToken) return;
+  bootFailedAssets = failures;
+  if (failures.length) {
+    setBootCheck("startupAssetsCheck", "error", `${failures.length} graphic${failures.length === 1 ? "" : "s"} could not load`, "RETRY NEEDED");
+    updateBootProgress(done - failures.length, BOOT_ASSET_MANIFEST.length, "Some graphics could not be loaded.");
+    const retryButton = document.getElementById("startupRetry");
+    if (retryButton) { retryButton.hidden = false; retryButton.textContent = "Retry missing assets"; }
+    return;
+  }
+  bootAssetsReady = true;
+  setBootCheck("startupAssetsCheck", "ready", `${BOOT_ASSET_MANIFEST.length} graphics loaded and decoded`, "READY");
+  updateBootProgress(BOOT_ASSET_MANIFEST.length, BOOT_ASSET_MANIFEST.length, "Graphics ready — checking live server…");
+  const retryButton = document.getElementById("startupRetry");
+  if (retryButton) retryButton.hidden = bootServerReady;
+  tryFinishBoot();
+}
+function retryStartup() {
+  if (bootFailedAssets.length) {
+    bootStarted = false;
+    preloadBootAssets();
+  }
+  if (!hc2Socket && typeof window.io === "function") connectHC2();
+  else if (!hc2Socket && typeof window.io !== "function") { window.location.reload(); return; }
+  if (hc2Socket && !hc2Socket.connected) hc2Socket.connect();
+  updateBootServer(Boolean(hc2Socket && hc2Socket.connected));
+  const retry = document.getElementById("startupRetry");
+  if (retry && !bootFailedAssets.length && !bootServerReady) {
+    retry.hidden = true;
+    const label = document.getElementById("startupProgressLabel");
+    if (label) label.textContent = "Reconnecting to live server…";
+  }
+}
+document.getElementById("startupRetry")?.addEventListener("click", retryStartup);
+
 function pickWeightedSymbol() {
   const entries = [
     ["sevens.png", 1], ["stars.png", 2], ["bells.png", 3],
@@ -241,7 +364,7 @@ function symbolImg(name) {
   img.onerror = () => {
     console.error("[Hit Coins 2] Failed to load symbol asset:", img.src);
     img.onerror = null;
-    img.src = "assets/crown_coin.png";
+    img.src = "assets/coin_1.png";
     img.alt = "gold coin fallback";
   };
   return img;
@@ -452,7 +575,7 @@ function randomCollectorStrip() {
     if (Math.random() < 0.3) {
       items.push(`<div class="strip-empty"></div>`);
     } else {
-      items.push(`<div class="strip-item"><img src="assets/gold_coin.png" alt=""><span class="strip-label">+</span></div>`);
+      items.push(`<div class="strip-item"><img src="assets/coin_1.png" alt=""><span class="strip-label">+</span></div>`);
     }
   }
   items.push(items[0]);
@@ -1029,7 +1152,7 @@ function renderSettings(view) {
 function previewSymbols(reelIndex, session) {
   // While the last reel is "teasing", coins flicker past so the player can hope.
   const teasing = session.anticipating && reelIndex === session.third;
-  return Array.from({length: 3}, () => (teasing && Math.random() < 0.8) ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+  return Array.from({length: 3}, () => (teasing && Math.random() < 0.15) ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
 }
 function clearSession(session) {
   session.intervals.forEach(clearInterval);
@@ -1114,7 +1237,7 @@ function isBigWin(wins) {
   const hasPremium = wins.some(w => ["sevens.png", "stars.png"].includes(w.symbol));
   const midTierWays = wins.filter(w => ["bells.png", "watermelon.png", "grapes.png"].includes(w.symbol)).length;
   const fruitWays = wins.filter(w => ["cherries.png", "lemon.png", "orange.png"].includes(w.symbol)).length;
-  return hasPremium || midTierWays >= 2 || fruitWays >= 5;
+  return hasPremium || midTierWays >= 2 || fruitWays >= 4;
 }
 
 function finishSpin(session) {
@@ -1153,39 +1276,24 @@ function finishSpin(session) {
   if (auto) {
     if (autoRemaining <= 0) stopAuto("Auto spin finished");
     else if (balance < betAmount) stopAuto("Auto spin stopped — balance too low");
-    else scheduleAuto(payout > 0 ? 1100 : (fastMode ? 250 : 410));
+    else scheduleAuto(payout > 0 ? 1100 : (fastMode ? 250 : 450));
   }
 }
 
 let hc2Socket = null, pendingRequestId = null, requestCounter = 0;
 function connectHC2() {
   if (typeof window.io !== "function") { showToast("Socket.IO client failed to load"); return; }
-  hc2Socket = window.io(
-  "https://keno-server-20g6.onrender.com",
-  { transports: ["websocket", "polling"] }
-);
-  
-hc2Socket.on("connect", () => {
-  const params = new URLSearchParams(window.location.search);
-  const userId = params.get("userId") || "guest_user";
-
-  hc2Socket.emit("initUser", {
-    userId: userId,
-    name: "Hit Coins 2 Player",
-    phone: ""
+  hc2Socket = window.io(window.HC2_SOCKET_URL || location.origin, { transports:["websocket","polling"] });
+  hc2Socket.on("connect", () => {
+    updateBootServer(true);
+    if (document.body.classList.contains("game-ready")) showToast("Connected to game server");
   });
-
-  showToast("Connected");
-});
-
-  hc2Socket.on("connect_error", (err) => {
-  console.error("SOCKET CONNECTION ERROR:", err.message);
-  showToast("Connection error: " + err.message);
-});
-
-hc2Socket.on("connect", () => {
-  console.log("Connected to game server:", hc2Socket.id);
-});
+  hc2Socket.on("disconnect", () => updateBootServer(false));
+  hc2Socket.on("connect_error", () => {
+    updateBootServer(false);
+    const label = document.getElementById("startupProgressLabel");
+    if (label && !document.body.classList.contains("game-ready")) label.textContent = "Server unavailable — waiting to reconnect…";
+  });
   hc2Socket.on("hc2Error", msg => {
     if (msg && msg.requestId && msg.requestId !== pendingRequestId) return;
     if (activeSpin) { clearSession(activeSpin); activeSpin = null; }
@@ -1200,19 +1308,15 @@ hc2Socket.on("connect", () => {
     const session=activeSpin; pendingRequestId=null;
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
-    const durations=fastMode?[235,335,430]:[470,550,640];
+    const durations=fastMode?[270,360,450]:[570,650,740];
     reels.forEach((reel,i)=>{
       session.reelTimers[i]=setTimeout(()=>landReel(session,i),durations.slice(0,i+1).reduce((a,v)=>a+v,0));
     });
   });
- hc2Socket.on("balanceUpdate", (data) => {
-    if (data && typeof data.balance === "number") {
-       balance = data.balance;
-       updateBalance();
-    }
-});
 }
 connectHC2();
+updateBootServer(Boolean(hc2Socket && hc2Socket.connected));
+preloadBootAssets();
 
 function spin() {
   if (spinning) { showToast("Waiting for server result…"); return; }
@@ -1243,8 +1347,8 @@ function spin() {
 function fillReels() {
   const startingGrid = [
     ["coin_10.png", "lemon.png", "bells.png"],
-    ["plum.png","crown_coin.png", "watermelon.png"],
-    ["cherries.png", "stars.png", "grand.png"]
+    ["crown_coin.png", "plum.png", "watermelon.png"],
+    ["cherries.png", "grand.png", "stars.png"]
   ];
   reels.forEach((reel, i) => setReelSymbols(reel, startingGrid[i]));
 }
