@@ -202,7 +202,7 @@ const symbolPreloads = symbols.map(name => {
 });
 
 /* Startup gate: decode every local image before revealing the game. */
-const BOOT_ASSET_MANIFEST = [ "bells.png", "bonus_bg.png", "cherries.png", "clean-background.png","coin_1.png", "coin_10.png", "coin_15.png", "coin_2.png", "coin_5.png", "crown_coin.png", "grand.png", "grapes.png", "lemon.png", "major.png", "mini.png", "minor.png", "orange.png",  "plum.png",reference-background.png", "reference-symbol-sheet.png", "sevens.png", "watermelon.png"];
+const BOOT_ASSET_MANIFEST = ["bells.png", "bonus_bg.png", "cherries.png", "clean-background.png", "coin_1.png", "coin_10.png", "coin_15.png", "coin_2.png", "coin_5.png", "crown_coin.png", "grand.png", "grapes.png", "lemon.png", "major.png", "mini.png", "minor.png", "orange.png", "plum.png", "plum.svg", "reference-background.png", "reference-symbol-sheet.png", "sevens.png", "stars.png", "watermelon.png"];
 let bootAssetsReady = false;
 let bootServerReady = false;
 let bootStarted = false;
@@ -575,7 +575,7 @@ function randomCollectorStrip() {
     if (Math.random() < 0.3) {
       items.push(`<div class="strip-empty"></div>`);
     } else {
-      items.push(`<div class="strip-item"><img src="assets/coin_1.png" alt=""><span class="strip-label">+</span></div>`);
+      items.push(`<div class="strip-item"><img src="assets/gold_coin.png" alt=""><span class="strip-label">+</span></div>`);
     }
   }
   items.push(items[0]);
