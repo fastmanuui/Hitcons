@@ -1295,9 +1295,32 @@ function connectHC2() {
   }
 );
   hc2Socket.on("connect", () => {
-    updateBootServer(true);
-    if (document.body.classList.contains("game-ready")) showToast("Connected to game server");
-  });
+  updateBootServer(true);
+
+  let userId = null;
+  try {
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (tgUser?.id) {
+      userId = "tg_" + tgUser.id;
+    }
+  } catch (e) {}
+
+  if (userId) {
+    hc2Socket.emit("initUser", {
+      userId: userId,
+      name: "Player",
+      phone: ""
+    });
+  }
+
+  if (document.body.classList.contains("game-ready")) {
+    showToast("Connected to game server");
+  }
+});
+  hc2Socket.on("balanceUpdate", (data) => {
+  balance = Number(data.balance) || 0;
+  updateBalance();
+});
   hc2Socket.on("disconnect", () => updateBootServer(false));
   hc2Socket.on("connect_error", () => {
     updateBootServer(false);
