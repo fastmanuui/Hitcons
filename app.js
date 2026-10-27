@@ -241,7 +241,7 @@ function symbolImg(name) {
   img.onerror = () => {
     console.error("[Hit Coins 2] Failed to load symbol asset:", img.src);
     img.onerror = null;
-    img.src = "assets/gold_coin.png";
+    img.src = "assets/crown_coin.png";
     img.alt = "gold coin fallback";
   };
   return img;
@@ -479,7 +479,7 @@ function collectorCellHtml(value, spinning, isNew) {
   }
   const cls = isNew ? "collector-cell active new-flash" : "collector-cell active";
   return `<div class="${cls}">
-    <img src="assets/gold_coin.png" alt="collector">
+    <img src="assets/coin_1.png" alt="collector">
     <b class="collector-value">${value}</b>
   </div>`;
 }
