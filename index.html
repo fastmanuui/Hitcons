@@ -18,6 +18,25 @@
   </defs>
 </svg>
 
+<!-- Startup gate: the game stays covered until assets are decoded and Socket.IO is connected. -->
+<section class="startup-screen" id="startupScreen" role="status" aria-live="polite" aria-label="Loading Hit Coins 2">
+  <div class="startup-orb startup-orb-one"></div><div class="startup-orb startup-orb-two"></div>
+  <div class="startup-content">
+    <div class="startup-emblem"><span class="startup-crown">♛</span><span class="startup-coin startup-coin-a">✦</span><span class="startup-coin startup-coin-b">✦</span></div>
+    <div class="startup-eyebrow">THE GOLDEN REELS</div>
+    <h1>HIT COINS <span>2</span></h1>
+    <p class="startup-tagline">Fortune is getting ready.</p>
+    <div class="startup-progress-track"><div class="startup-progress-fill" id="startupProgressFill"></div></div>
+    <div class="startup-progress-meta"><span id="startupProgressLabel">Preparing your game…</span><strong id="startupProgressPercent">0%</strong></div>
+    <div class="startup-checks">
+      <div class="startup-check" id="startupAssetsCheck"><span class="startup-check-icon">◌</span><span><b>Game assets</b><small id="startupAssetsDetail">Loading and decoding graphics</small></span><em>WAITING</em></div>
+      <div class="startup-check" id="startupServerCheck"><span class="startup-check-icon">◌</span><span><b>Live server</b><small id="startupServerDetail">Connecting securely to the game</small></span><em>CONNECTING</em></div>
+    </div>
+    <div class="startup-footer"><span class="startup-pulse"></span> YOUR GAME WILL OPEN AUTOMATICALLY WHEN READY</div>
+    <button class="startup-retry" id="startupRetry" type="button" hidden>Retry loading</button>
+  </div>
+</section>
+
 <main class="game" aria-label="Hit Coins game interface">
   <div class="reel-frame">
     <div class="reels" id="reels">
@@ -133,12 +152,8 @@
     </div>
   </div>
 </main>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-<script>
-  window.HC2_SOCKET_URL = "https://keno-server-20g6.onrender.com";
-</script>
-
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script>window.HC2_SOCKET_URL = window.HC2_SOCKET_URL || location.origin;</script>
 <script src="app.js"></script>
 </body>
 </html>
