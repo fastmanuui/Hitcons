@@ -1114,7 +1114,7 @@ function isBigWin(wins) {
   const hasPremium = wins.some(w => ["sevens.png", "stars.png"].includes(w.symbol));
   const midTierWays = wins.filter(w => ["bells.png", "watermelon.png", "grapes.png"].includes(w.symbol)).length;
   const fruitWays = wins.filter(w => ["cherries.png", "lemon.png", "orange.png"].includes(w.symbol)).length;
-  return hasPremium || midTierWays >= 2 || fruitWays,>= 5;
+  return hasPremium || midTierWays >= 2 || fruitWays >= 5;
 }
 
 function finishSpin(session) {
