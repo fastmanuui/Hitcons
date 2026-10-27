@@ -1297,27 +1297,28 @@ function connectHC2() {
   hc2Socket.on("connect", () => {
   updateBootServer(true);
 
-  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  const params = new URLSearchParams(window.location.search);
+  const userId = params.get("userId") || "guest_user";
 
-  if (tgUser?.id) {
-    hc2Socket.emit("initUser", {
-      userId: "tg_" + String(tgUser.id),
-      name: tgUser.first_name || "Player",
-      phone: ""
-    });
-  } else {
-    console.error("Telegram user ID unavailable; player not initialized.");
-  }
+  console.log("Connecting as userId:", userId);   // ← add this
 
-  if (document.body.classList.contains("game-ready")) {
-    showToast("Connected to game server");
-  }
-});
+  hc2Socket.emit("initUser", {
+    userId: userId,
+    name: "Hit Coins 2 Player",
+    phone: ""
+  });
 
-hc2Socket.on("balanceUpdate", (data) => {
-  balance = Number(data.balance) || 0;
-  updateBalance();
-});
+  hc2Socket.emit("requestBalance", { userId });
+  showToast("Connected");
+  });
+
+  hc2Socket.on("balanceUpdate", (data) => {
+     console.log("Received balanceUpdate:", data);   // ← add this
+     if (data && typeof data.balance === "number") {
+        balance = data.balance;
+        updateBalance();
+     }
+  });
   hc2Socket.on("disconnect", () => updateBootServer(false));
   hc2Socket.on("connect_error", () => {
     updateBootServer(false);
