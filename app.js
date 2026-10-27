@@ -1297,27 +1297,24 @@ function connectHC2() {
   hc2Socket.on("connect", () => {
   updateBootServer(true);
 
-  let userId = null;
-  try {
-    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-    if (tgUser?.id) {
-      userId = "tg_" + tgUser.id;
-    }
-  } catch (e) {}
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
 
-  if (userId) {
+  if (tgUser?.id) {
     hc2Socket.emit("initUser", {
-      userId: userId,
-      name: "Player",
+      userId: "tg_" + String(tgUser.id),
+      name: tgUser.first_name || "Player",
       phone: ""
     });
+  } else {
+    console.error("Telegram user ID unavailable; player not initialized.");
   }
 
   if (document.body.classList.contains("game-ready")) {
     showToast("Connected to game server");
   }
 });
-  hc2Socket.on("balanceUpdate", (data) => {
+
+hc2Socket.on("balanceUpdate", (data) => {
   balance = Number(data.balance) || 0;
   updateBalance();
 });
