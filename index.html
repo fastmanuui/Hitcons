@@ -4,7 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Hit Coins 2 — UI Prototype</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=hc2-splash-layout-2">
+<!-- Critical splash layout is inline so it still works if a host/browser serves an older cached stylesheet. -->
+<style id="critical-startup-layout">
+html,body{margin:0;min-height:100%;width:100%;}
+body{overflow:hidden;}
+.startup-screen{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;box-sizing:border-box!important;z-index:2147483647!important;display:grid!important;place-items:center!important;overflow-y:auto!important;overflow-x:hidden!important;padding:24px!important;background:radial-gradient(ellipse at 50% 28%,#5b1743 0%,#26091f 38%,#100611 76%,#080409 100%)!important;color:#fff!important;font-family:Arial,Helvetica,sans-serif!important;isolation:isolate!important;}
+.startup-screen[hidden],.startup-retry[hidden]{display:none!important}
+.startup-screen:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.2;background-image:linear-gradient(#ffd76a0d 1px,transparent 1px),linear-gradient(90deg,#ffd76a0d 1px,transparent 1px);background-size:44px 44px}
+.startup-screen:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 35%,#0009 100%)}
+.startup-content{position:relative;z-index:1;width:min(100%,390px);margin:auto;box-sizing:border-box;text-align:center}
+.game{visibility:hidden!important}
+body.game-ready .game{visibility:visible!important}
+@media(max-height:650px){.startup-screen{padding:14px!important}.startup-content{max-width:340px}}
+</style>
+
 </head>
 <body>
 <!-- Shared gradients for the control-button icons -->
