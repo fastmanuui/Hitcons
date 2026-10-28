@@ -1066,6 +1066,35 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   100% { transform: translateY(0); }
 }
 
+/* Final symbols land in place — no strip swap, so no wrong-symbol flash */
+.symbol.symbol-land {
+  animation: symbolLand 0.28s cubic-bezier(0.22, 1.45, 0.36, 1) both;
+  animation-delay: var(--land-delay, 0ms);
+}
+@keyframes symbolLand {
+  0%   { transform: translateY(-35%) scale(0.92); opacity: 0.35; }
+  65%  { transform: translateY(5%) scale(1.06); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+.symbol.coin-land-burst {
+  animation: coinHit 0.9s ease-in-out infinite, coinLandPop 0.45s ease-out;
+  z-index: 4;
+}
+@keyframes coinLandPop {
+  0%   { transform: scale(0.7); filter: drop-shadow(0 0 4px #ffd24a); }
+  50%  { transform: scale(1.18); filter: drop-shadow(0 0 22px #fff08a); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 10px #ffd24a); }
+}
+
+/* Anticipation: faster visual urgency on the last reel */
+.anticipate-reel.spinning-reel .reel-strip {
+  --reel-dur: 0.06s !important;
+  animation-duration: 0.06s !important;
+}
+.anticipate-reel {
+  animation: reelPulse 0.55s ease-in-out infinite;
+}
+
 /* =====================================================================
    Win FX: coin shower + screen shake
    ===================================================================== */
