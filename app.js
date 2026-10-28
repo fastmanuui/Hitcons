@@ -382,61 +382,75 @@ function setReelSymbols(reel, names) {
   box.replaceChildren(...names.map(symbolImg));
 }
 
-/* ---------- Continuous reel strip (stable pixel heights, clean stop) ---------- */
+/* ---------- Continuous reel strip via rAF (reliable motion, not CSS-var keyframes) ---------- */
 const REEL_STRIP_LEN = 24;
 function cellHeight(reel) {
-  const h = reel.querySelector(".symbols").clientHeight || reel.clientHeight || 120;
-  return Math.max(24, Math.floor(h / 3));
+  const box = reel.querySelector(".symbols");
+  const h = (box && box.clientHeight) || reel.clientHeight || 120;
+  return Math.max(28, Math.floor(h / 3));
 }
 function buildReelStrip(names, cellH) {
   const strip = document.createElement("div");
   strip.className = "reel-strip";
   names.forEach(n => {
     const img = symbolImg(n);
-    img.style.height = cellH + "px";
-    img.style.minHeight = cellH + "px";
-    img.style.maxHeight = cellH + "px";
-    img.style.flex = "0 0 " + cellH + "px";
+    img.style.cssText = `height:${cellH}px;min-height:${cellH}px;max-height:${cellH}px;flex:0 0 ${cellH}px;width:88%;object-fit:contain;`;
     strip.appendChild(img);
   });
   return strip;
 }
+function stopReelRaf(session, reelIndex) {
+  if (!session || !session.raf) return;
+  if (session.raf[reelIndex]) {
+    cancelAnimationFrame(session.raf[reelIndex]);
+    session.raf[reelIndex] = null;
+  }
+}
 function startReelStripSpin(reel, reelIndex, session) {
   const box = reel.querySelector(".symbols");
   const cellH = cellHeight(reel);
+  stopReelRaf(session, reelIndex);
   box.classList.add("is-strip");
-  box.style.setProperty("--cell-h", cellH + "px");
   const names = [];
   for (let i = 0; i < REEL_STRIP_LEN; i++) {
     const teasing = session.anticipating && reelIndex === session.third;
-    names.push(teasing && Math.random() < 0.2 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+    names.push(teasing && Math.random() < 0.22 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
   }
-  // Duplicate first 3 at end for a seamless loop feel
   names.push(names[0], names[1], names[2]);
   const strip = buildReelStrip(names, cellH);
   box.replaceChildren(strip);
-  // Duration = time to move one cell. Lower = faster.
-  let dur = fastMode ? 0.09 : 0.15;
-  if (session.anticipating && reelIndex === session.third) dur = 0.055;
-  strip.style.setProperty("--reel-dur", dur + "s");
-  strip.style.setProperty("--cell-h", cellH + "px");
-  // Start animation only after layout
-  reel.classList.remove("spinning-reel");
-  void strip.offsetWidth;
   reel.classList.add("spinning-reel");
+
+  // px per second — higher = faster. Anticipation is intentionally blistering.
+  let speed = fastMode ? 900 : 520;
+  if (session.anticipating && reelIndex === session.third) speed = 1400;
+  let offset = 0;
+  let last = performance.now();
+  if (!session.raf) session.raf = [null, null, null];
+
+  const tick = (now) => {
+    if (!session || session.landed[reelIndex] || session.finished) return;
+    if (!reel.classList.contains("spinning-reel")) return;
+    const dt = Math.min(32, now - last);
+    last = now;
+    offset = (offset + speed * (dt / 1000)) % cellH;
+    strip.style.transform = `translate3d(0, ${-offset}px, 0)`;
+    session.raf[reelIndex] = requestAnimationFrame(tick);
+  };
+  session.raf[reelIndex] = requestAnimationFrame(tick);
 }
-function stopReelStrip(reel, finalNames) {
+function stopReelStrip(reel, finalNames, session, reelIndex) {
+  if (session) stopReelRaf(session, reelIndex);
   const box = reel.querySelector(".symbols");
-  // Hard stop — remove strip, show exact finals once (no second swap)
   reel.classList.remove("spinning-reel", "anticipate-reel");
   const old = box.querySelector(".reel-strip");
   if (old) {
     old.style.animation = "none";
+    old.style.transform = "none";
     old.remove();
   }
   box.classList.remove("is-strip");
-  box.style.removeProperty("--cell-h");
-  // One shot: the real result. Tiny scale pulse only (does not change the art).
+  // Final result once — same symbols the server sent
   box.replaceChildren(...finalNames.map(symbolImg));
   box.querySelectorAll(".symbol").forEach(img => {
     img.classList.add("symbol-pop");
@@ -1263,6 +1277,9 @@ function clearSession(session) {
   (session.reelTimers || []).forEach(clearTimeout);
   (session.timers || []).forEach(clearTimeout);
   if (session.countdown) clearInterval(session.countdown);
+  if (session.raf) session.raf.forEach((_, i) => stopReelRaf(session, i));
+  if (session.anticipateSfx) { clearInterval(session.anticipateSfx); session.anticipateSfx = null; }
+  clearAnticipateSpark();
 }
 function landReel(session, i) {
   if (session.landed[i] || session.finished) return;
@@ -1271,27 +1288,31 @@ function landReel(session, i) {
   if (session.reelTimers[i]) clearTimeout(session.reelTimers[i]);
   const reel = reels[i];
   const wasAnticipating = session.anticipating && i === session.third;
-  stopReelStrip(reel, session.finalSets[i]);
+  stopReelStrip(reel, session.finalSets[i], session, i);
   GameAudio.play("stop");
   haptic(8);
 
-  // Third coin just landed after anticipation — glow it + shake
-  if (wasAnticipating && session.finalSets[i].some(isCoin)) {
-    game.classList.add("screen-shake");
-    setTimeout(() => game.classList.remove("screen-shake"), 550);
-    haptic([25, 30, 25, 30, 40]);
-    // Mark all coins (including the one that just landed) once symbols are in place
-    requestAnimationFrame(() => {
-      markCoins(session, "coin-hit");
-      const justLanded = reel.querySelectorAll(".symbol");
-      session.finalSets[i].forEach((name, row) => {
-        if (isCoin(name) && justLanded[row]) {
-          justLanded[row].classList.add("coin-hit", "coin-land-burst");
-          spawnCoinFx(justLanded[row]);
-        }
+  // Third coin just landed after anticipation — stop suspense FX, glow + shake
+  if (wasAnticipating) {
+    if (session.anticipateSfx) { clearInterval(session.anticipateSfx); session.anticipateSfx = null; }
+    clearAnticipateSpark();
+    game.classList.remove("anticipating");
+    if (session.finalSets[i].some(isCoin)) {
+      game.classList.add("screen-shake");
+      setTimeout(() => game.classList.remove("screen-shake"), 550);
+      haptic([25, 30, 25, 30, 40]);
+      requestAnimationFrame(() => {
+        markCoins(session, "coin-hit");
+        const justLanded = reel.querySelectorAll(".symbol");
+        session.finalSets[i].forEach((name, row) => {
+          if (isCoin(name) && justLanded[row]) {
+            justLanded[row].classList.add("coin-hit", "coin-land-burst");
+            spawnCoinFx(justLanded[row]);
+          }
+        });
       });
-    });
-    GameAudio.play("coin");
+      GameAudio.play("coin");
+    }
   }
 
   if (session.landed.every(Boolean)) {
@@ -1309,14 +1330,50 @@ function maybeStartAnticipation(session) {
   session.anticipating = true;
   game.classList.add("anticipating");
   reels[session.third].classList.add("anticipate-reel");
-  // Rebuild the last reel with a VERY fast spin + more coin teases
+  // Rebuild the held reel with a VERY fast spin + coin teases
   startReelStripSpin(reels[session.third], session.third, session);
   markCoins(session, "coin-wait");
   GameAudio.play("coin");
+  startAnticipateSfx(session);
+  spawnAnticipateSpark(session.third);
 
   banner.textContent = "ONE MORE COIN!";
   banner.classList.add("show", "suspense");
   session.timers.push(setTimeout(() => landReel(session, session.third), ANTICIPATION_MS));
+}
+
+/* Anticipation suspense: rising tick sound + gold spark on the held column (bottom row) */
+function startAnticipateSfx(session) {
+  if (session.anticipateSfx) clearInterval(session.anticipateSfx);
+  let n = 0;
+  const playTick = () => {
+    if (!session.anticipating || session.finished) return;
+    // Rising urgency ticks (WebAudio tones already in GameAudio)
+    GameAudio.play("tick");
+    n++;
+  };
+  playTick();
+  session.anticipateSfx = setInterval(playTick, 180);
+}
+function clearAnticipateSpark() {
+  document.querySelectorAll(".anticipate-spark").forEach(el => el.remove());
+}
+function spawnAnticipateSpark(reelIndex) {
+  clearAnticipateSpark();
+  const reel = reels[reelIndex];
+  if (!reel) return;
+  const g = game.getBoundingClientRect();
+  const r = reel.getBoundingClientRect();
+  // Bottom row center of this column
+  const cx = ((r.left + r.width / 2) - g.left) / g.width * 100;
+  const cy = ((r.top + r.height * 0.82) - g.top) / g.height * 100;
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement("span");
+    s.className = "anticipate-spark";
+    s.textContent = "✦";
+    s.style.cssText = `left:${cx}%;top:${cy}%;animation-delay:${(i * 0.12).toFixed(2)}s;`;
+    game.appendChild(s);
+  }
 }
 function requestStop() {
   const s = activeSpin;
@@ -1397,6 +1454,7 @@ function finishSpin(session) {
     if (auto) stopAuto("Auto spin stopped — coin bonus!");
     celebrateCoins(session); return;
   }
+  if (!celebrating) game.classList.add("idle-on");
   if (auto) {
     if (autoRemaining <= 0) stopAuto("Auto spin finished");
     else if (balance < betAmount) stopAuto("Auto spin stopped — balance too low");
@@ -1509,12 +1567,11 @@ function connectHC2() {
     // If exactly two reels show a coin, hold the empty one for anticipation
     const coinReels = [0,1,2].filter(r => session.finalSets[r].some(isCoin));
     session.third = (coinReels.length === 2) ? [0,1,2].find(r => !coinReels.includes(r)) : -1;
-    const step = fastMode ? 160 : 520;
-    let order = 0;
+    // Always land left → middle → right by column index (skip the held anticipation reel)
+    const step = fastMode ? 180 : 480;
     [0,1,2].forEach(i => {
-      if (i === session.third) return; // held for anticipation
-      const delay = step * (++order);
-      session.reelTimers[i] = setTimeout(() => landReel(session, i), delay);
+      if (i === session.third) return;
+      session.reelTimers[i] = setTimeout(() => landReel(session, i), step * (i + 1));
     });
   });
 }
@@ -1536,9 +1593,10 @@ function spin() {
   const icon=spinBtn.querySelector("span");if(icon)icon.textContent="■";
   GameAudio.play("spin");
   haptic(18);
+  game.classList.remove("idle-on"); // idle bob looked like shaking instead of spinning
   const session={finalGrid:null,finalSets:null,third:-1,serverResult:null,serverBonus:null,
     intervals:[null,null,null],reelTimers:[null,null,null],timers:[],landed:[false,false,false],
-    anticipating:false,finished:false,countdown:null};
+    anticipating:false,finished:false,countdown:null,raf:[null,null,null],anticipateSfx:null};
   activeSpin=session;
   reels.forEach((reel,i)=>{
     startReelStripSpin(reel, i, session);
