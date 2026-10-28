@@ -399,30 +399,46 @@ function startReelStripSpin(reel, reelIndex, session) {
   }
   const strip = buildReelStrip(names);
   box.replaceChildren(strip);
-  reel.classList.add("spinning-reel");
-  // Speed via CSS variable (fast mode uses shorter duration)
-  strip.style.setProperty("--reel-dur", fastMode ? "0.28s" : "0.42s");
+  // Speed: shorter = faster visual spin
+  strip.style.setProperty("--reel-dur", fastMode ? "0.11s" : "0.16s");
+  // Add spinning class AFTER strip is in the DOM so animation starts cleanly
+  requestAnimationFrame(() => {
+    reel.classList.add("spinning-reel");
+  });
 }
 function stopReelStrip(reel, finalNames) {
   const box = reel.querySelector(".symbols");
+  // Kill spin loop first so it cannot restart
   reel.classList.remove("spinning-reel", "anticipate-reel");
-  // Put the final 3 symbols at the TOP of a short strip, animate them dropping in
-  const lead = [];
-  for (let i = 0; i < 6; i++) lead.push(pickWeightedSymbol());
-  const finalStrip = buildReelStrip([...lead, ...finalNames]);
+  const old = box.querySelector(".reel-strip");
+  if (old) {
+    old.style.animation = "none";
+    old.classList.remove("reel-settle");
+  }
+  // Short strip: a few blur symbols, then the 3 finals at the end
+  // We animate from showing the middle to the finals (translateY 0 = top of strip visible)
+  // Layout: [pad0, pad1, pad2, final0, final1, final2] — start at -50% so finals slide in
+  const pad = [];
+  for (let i = 0; i < 3; i++) pad.push(pickWeightedSymbol());
+  const finalStrip = buildReelStrip([...pad, ...finalNames]);
+  finalStrip.style.animation = "none";
+  finalStrip.style.transform = "translateY(-50%)";
   box.classList.add("is-strip");
   box.replaceChildren(finalStrip);
-  // Start offset so finals are just above view, then settle to 0 (finals visible)
-  finalStrip.style.transform = "translateY(-66.666%)";
-  void finalStrip.offsetWidth;
-  finalStrip.classList.add("reel-settle");
-  finalStrip.addEventListener("animationend", () => {
+  // Next frame: run settle only (no infinite scroll)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      finalStrip.classList.add("reel-settle");
+    });
+  });
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
     setReelSymbols(reel, finalNames);
-  }, { once: true });
-  // Safety: if animationend is missed, still show finals
-  setTimeout(() => {
-    if (box.querySelector(".reel-strip")) setReelSymbols(reel, finalNames);
-  }, 500);
+  };
+  finalStrip.addEventListener("animationend", finish, { once: true });
+  setTimeout(finish, 400);
 }
 
 function showToast(message) {
@@ -1244,7 +1260,7 @@ function landReel(session, i) {
   GameAudio.play("stop");
   haptic(8);
   if (session.landed.every(Boolean)) {
-    session.timers.push(setTimeout(() => finishSpin(session), 280));
+    session.timers.push(setTimeout(() => finishSpin(session), 360));
   } else {
     maybeStartAnticipation(session);
   }
