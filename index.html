@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Hit Coins 2 — UI Prototype</title>
-<link rel="stylesheet" href="style.css?v=hc2-splash-layout-2">
+<link rel="stylesheet" href="style.css?v=hc2-ui-improvements-1">
 <!-- Critical splash layout is inline so it still works if a host/browser serves an older cached stylesheet. -->
 <style id="critical-startup-layout">
 html,body{margin:0;min-height:100%;width:100%;}
@@ -125,10 +125,10 @@ body.game-ready .game{visibility:visible!important}
   </div>
   <div class="status">
     <div class="level">♛<small>21</small></div>
-    <div class="balance"><span>▣</span> ETB <b id="balance">0.64</b></div>
-    <div class="bet-value">ETB <b id="betValue">10.00</b> <span>▤</span></div>
+    <div class="balance"><span aria-hidden="true">◆</span> ETB <b id="balance">0.64</b></div>
+    <div class="bet-value">ETB <b id="betValue">10.00</b></div>
   </div>
-  <div class="footer"><span>⌂</span> <b>Hit Coins 2 Hold and Spin</b><time class="time" id="clock">--:--</time><span>▯</span></div>
+  <div class="footer"><b>Hit Coins 2</b><time class="time" id="clock">--:--</time></div>
   <div class="toast" id="toast" role="status"></div>
 
   <!-- Full-page Hold & Spin bonus (own page + matching purple UI) -->
