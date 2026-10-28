@@ -10,7 +10,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .symbol{display:block;width:88%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
 .reel:nth-child(3) .symbol{width:90%}
 /* Motion blur while symbols are moving. */
-.spinning-reel .symbol{filter:blur(0.9px) drop-shadow(0 2px 2px #12000a99)}
+.spinning-reel .symbol{filter:blur(1px)}
 .spinning-reel .symbols{will-change:filter,transform}
 .win-banner{position:absolute;left:14%;width:72%;top:61.7%;z-index:4;text-align:center;font-weight:1000;font-size:clamp(12px,3.6vw,25px);font-style:italic;letter-spacing:.5px;color:#fff4a1;text-shadow:0 2px #b80022,2px 3px #7b001a,-1px -1px #fff;border-radius:22px;border:2px solid #ffe7a0;padding:5px 8px;background:linear-gradient(180deg,#ffcf4a,#d6004b 52%,#7b0039);box-shadow:0 3px 0 #65001d,0 0 15px #ff3e80;pointer-events:none;opacity:0;transform:translateY(5px) scale(.96);transition:opacity .2s,transform .2s}
 .win-banner.show{opacity:1;transform:translateY(0) scale(1)}
@@ -1024,14 +1024,14 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 
 
 /* =====================================================================
-   Real reel strip scroll — pixel cell height (stable, no land flash)
+   Reel strip — JS rAF drives transform. NO CSS animation on the strip.
    ===================================================================== */
 .symbols.is-strip {
-  display: block;
+  display: block !important;
   padding: 0 !important;
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 .reel-strip {
   display: flex;
@@ -1039,35 +1039,44 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   align-items: center;
   width: 100%;
   will-change: transform;
-  animation: none;
+  animation: none !important;
   transform: translate3d(0, 0, 0);
 }
+/* IMPORTANT: do not animate .reel-strip with CSS — it fights rAF and looks like shaking */
 .spinning-reel .reel-strip {
-  animation: reelStripScroll var(--reel-dur, 0.15s) linear infinite;
+  animation: none !important;
 }
 .reel-strip .symbol {
   width: 88%;
   object-fit: contain;
-  padding: 2px 0;
+  padding: 0;
   box-sizing: border-box;
-  height: var(--cell-h, 40px);
-  min-height: var(--cell-h, 40px);
-  flex: 0 0 var(--cell-h, 40px);
+  display: block;
+  /* height set inline by JS in px */
+  flex-shrink: 0;
+  animation: none !important;
+  filter: none;
+  transform: none !important;
 }
 .spinning-reel .reel-strip .symbol {
-  filter: blur(0.9px) drop-shadow(0 2px 2px #12000a99);
+  filter: blur(1px);
+  transform: none !important;
+  animation: none !important;
 }
-@keyframes reelStripScroll {
-  from { transform: translate3d(0, calc(var(--cell-h, 40px) * -1), 0); }
-  to   { transform: translate3d(0, 0, 0); }
+/* Kill old scaleY "shake" on any spinning symbols */
+.spinning-reel .symbol {
+  transform: none !important;
+  animation: none !important;
+}
+.spinning-reel .symbols {
+  animation: none !important;
 }
 
-/* Soft pop on final symbols only — same art, no opacity fade */
 .symbol.symbol-pop {
-  animation: symbolPop 0.22s ease-out;
+  animation: symbolPop 0.2s ease-out;
 }
 @keyframes symbolPop {
-  0%   { transform: scale(1.08); }
+  0%   { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 .symbol.coin-land-burst {
@@ -1079,11 +1088,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   50%  { transform: scale(1.15); filter: drop-shadow(0 0 20px #fff08a); }
   100% { transform: scale(1); filter: drop-shadow(0 0 10px #ffd24a); }
 }
-
-/* Anticipation: very fast last reel */
 .anticipate-reel.spinning-reel .reel-strip {
-  --reel-dur: 0.055s !important;
-  animation-duration: 0.055s !important;
+  animation: none !important;
 }
 .anticipate-reel {
   animation: reelPulse 0.55s ease-in-out infinite;
@@ -1185,4 +1191,14 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(0deg); }
   25%  { opacity: 1; }
   100% { opacity: 0; transform: translate(calc(-50% + 12px), calc(-50% - 28px)) scale(1.2) rotate(50deg); }
+}
+
+/* Hard lock: nothing may animate/transform individual symbols while the reel scrolls */
+.spinning-reel .symbol,
+.spinning-reel .reel-strip .symbol {
+  animation: none !important;
+  transform: none !important;
+}
+.game.idle-on .spinning-reel .symbol {
+  animation: none !important;
 }
