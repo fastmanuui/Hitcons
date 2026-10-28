@@ -1033,28 +1033,36 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   align-items: center;
   width: 100%;
   will-change: transform;
-  animation: reelStripScroll var(--reel-dur, 0.42s) linear infinite;
+  /* NO infinite animation here — only while parent has .spinning-reel */
+  animation: none;
+  transform: translateY(0);
+}
+.spinning-reel .reel-strip {
+  animation: reelStripScroll var(--reel-dur, 0.18s) linear infinite;
 }
 .reel-strip .symbol {
-  flex: 0 0 calc(100% / 3);
-  height: calc(100% / 3);
+  flex: 0 0 33.333%;
+  height: 33.333%;
+  min-height: 33.333%;
   width: 88%;
   object-fit: contain;
   padding: 2px 0;
+  box-sizing: border-box;
 }
 .spinning-reel .reel-strip .symbol {
-  filter: blur(1.2px) drop-shadow(0 3px 2px #12000a99);
+  filter: blur(1.1px) drop-shadow(0 3px 2px #12000a99);
 }
 @keyframes reelStripScroll {
   from { transform: translateY(-33.333%); }
   to   { transform: translateY(0); }
 }
+/* Settling: must fully kill the spin loop, then bounce in */
 .reel-strip.reel-settle {
-  animation: reelSettle 0.4s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+  animation: reelSettle 0.32s cubic-bezier(0.22, 1.4, 0.36, 1) forwards !important;
 }
 @keyframes reelSettle {
-  0%   { transform: translateY(-66.666%); }
-  65%  { transform: translateY(3%); }
+  0%   { transform: translateY(-50%); }
+  70%  { transform: translateY(4%); }
   100% { transform: translateY(0); }
 }
 
@@ -1133,7 +1141,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reel-strip { animation-duration: 1.2s !important; }
+  .spinning-reel .reel-strip { animation-duration: 0.5s !important; }
+  .reel-strip.reel-settle { animation-duration: 0.2s !important; }
   .fx-coin, .game.screen-shake, .idle-glow, .idleSymbolBob { animation: none !important; }
   .game.idle-on .symbol { animation: none !important; }
 }
