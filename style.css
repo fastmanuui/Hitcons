@@ -7,7 +7,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .reel{position:relative;min-width:0;min-height:0;overflow:hidden;border-right:3px solid #e9a92b;background:linear-gradient(90deg,#3b001f,#56002c 50%,#39001d)}
 .reel:last-child{border-right:0}
 .symbols{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));align-items:stretch;justify-items:center;gap:0;padding:1.5% 2%;overflow:hidden}
-.symbol{display:block;width:10%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
+.symbol{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
 .reel:nth-child(3) .symbol{width:90%}
 /* Motion blur while symbols are moving. */
 .spinning-reel .symbol{filter:blur(1px)}
