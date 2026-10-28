@@ -37,8 +37,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .ctl .ico{position:relative;display:block;width:46%;height:auto;aspect-ratio:1;filter:drop-shadow(0 2px 1px #4a0026)}
 .ctl em{
   position:relative;font-style:normal;font-weight:900;line-height:1;
-  font-size:clamp(5.5px,1.9vw,9px);font-size:clamp(5.5px,2cqw,10px);
-  letter-spacing:.2px;color:#ffeaa6;text-shadow:0 1px 1px #4b0027,0 0 4px #4b0027;
+  font-size:clamp(9px,2.4cqw,13px);
+  letter-spacing:.3px;color:#ffeaa6;text-shadow:0 1px 1px #4b0027,0 0 4px #4b0027;
 }
 .side-btn{width:13.5%;height:72%}
 .menu{border-radius:0 999px 999px 0;border-left-width:0}
@@ -73,15 +73,17 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .spin.spinning span{animation:none;font-size:.38em;transform:none;color:#fff!important;text-shadow:0 1px 2px #65001d}
 .spin.spinning{background:radial-gradient(circle at 35% 25%,#ff9acb,#d00076 65%,#6f004a)!important}
 .spin.stopped span{animation:none}
-.status{position:absolute;left:2%;right:2%;top:89.1%;height:3.4%;display:flex;align-items:center;justify-content:space-between;gap:3%;font-size:clamp(10px,3vw,22px);font-size:clamp(10px,3cqw,22px);font-weight:900;text-shadow:0 2px 3px #210014;background:linear-gradient(90deg,rgba(20,0,20,.68),rgba(20,0,20,.48),rgba(20,0,20,.68));border-radius:8px;padding:0 2.5%;z-index:5}
-.balance,.bet-value{display:flex;align-items:center;gap:8px;white-space:nowrap}
-.balance span{font-size:1.3em}
-.bet-value span{font-size:1.5em}
-.level{position:absolute;left:0;bottom:110%;font-size:clamp(24px,6vw,45px);font-size:clamp(20px,6cqw,45px);color:#ffdf43;text-shadow:0 2px #7e0047}
-.level small{display:block;text-align:center;margin-top:-.45em;font-size:.38em;color:#fff}
-.footer{position:absolute;left:5%;right:5%;bottom:1.1%;display:flex;align-items:center;gap:4%;font-size:clamp(9px,2.6vw,18px);font-size:clamp(9px,2.6cqw,18px);color:#ddd;text-shadow:0 2px 4px #000;background:linear-gradient(90deg,rgba(24,0,22,.55),rgba(24,0,22,.4));padding:5px 8px;border-radius:6px;z-index:5}
-.footer>span,.footer>time{font-size:1.4em}
-.footer .time{margin-left:auto;font-variant-numeric:tabular-nums}
+.status{position:absolute;left:2%;right:2%;top:88.6%;height:4.2%;display:flex;align-items:center;justify-content:space-between;gap:3%;font-size:clamp(13px,3.4cqw,22px);font-weight:900;text-shadow:0 2px 3px #210014;background:linear-gradient(90deg,rgba(12,0,12,.78),rgba(20,0,20,.62),rgba(12,0,12,.78));border-radius:10px;padding:0 3%;z-index:5;border:1px solid #ffcf5244}
+.balance,.bet-value{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.balance b,.bet-value b{font-size:1.25em;color:#ffdf61;letter-spacing:.02em}
+.balance span,.bet-value span{opacity:.7;font-size:.9em}
+.level{position:absolute;left:0;bottom:115%;font-size:clamp(22px,5.5cqw,40px);color:#ffdf43;text-shadow:0 2px #7e0047}
+.level small{display:block;text-align:center;margin-top:-.4em;font-size:.36em;color:#fff;opacity:.9}
+.footer{position:absolute;left:4%;right:4%;bottom:1%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:clamp(11px,2.8cqw,16px);color:#ccc;text-shadow:0 1px 3px #000;background:rgba(12,0,12,.55);padding:4px 12px;border-radius:8px;z-index:5;border:1px solid #ffffff12}
+.footer b{font-weight:800;color:#ffd0e6;letter-spacing:.03em}
+.footer .time{margin-left:auto;font-variant-numeric:tabular-nums;opacity:.85}
+.footer > span:first-child,
+.footer > span:last-child{display:none} /* remove decorative glyphs */
 .toast{position:absolute;left:20%;right:20%;bottom:12%;padding:8px 10px;text-align:center;border-radius:16px;background:#56002eea;border:1px solid #ffca56;font-weight:bold;font-size:clamp(11px,3vw,17px);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;z-index:10}
 .toast.show{opacity:1;transform:translateY(0)}
 @keyframes rotate{to{transform:rotate(360deg)}}
@@ -332,16 +334,9 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .jp-mini  { background: linear-gradient(90deg, #8a2be2, #4b0082); border: 1px solid #da70d6; }
 
 .bonus-logo {
-  position: relative;
-  z-index: 2;
-  width: 70%;
-  max-width: 260px;
-  aspect-ratio: 1.6;
-  margin: 2% 0 1%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  /* Logo + jackpots are already baked into the background image.
+     Keep the element for layout stability but hide it completely. */
+  display: none !important;
 }
 .coin-pile {
   position: absolute;
@@ -882,3 +877,263 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 /* remove the dot / stripe overlays so they don't dirty the photo */
 .bonus-bg::before,
 .bonus-bg::after { display: none; }
+
+/* =====================================================================
+   UI IMPROVEMENTS (visual only – no logic changes)
+   - Readable text sizes
+   - Hide redundant logo/jackpots (already in background art)
+   - Distinct collectors
+   - Cleaner hierarchy & reduced visual noise
+   - Better footer / status
+   ===================================================================== */
+
+/* --- Bonus page: hide elements already painted in the background image --- */
+.bonus-jackpots,
+.bonus-logo {
+  display: none !important;
+}
+
+/* Give the collector board more breathing room on the open floor of the art */
+.bonus-page {
+  padding-top: 28%;
+  justify-content: flex-start;
+}
+.hold-frame {
+  margin-top: 0;
+  width: 88%;
+  max-width: 340px;
+  border-width: 2px;
+  box-shadow:
+    inset 0 0 0 1px #fff2a088,
+    inset 0 0 18px #0008,
+    0 6px 20px #000a;
+}
+
+/* Make collectors visually distinct from the coins they collect */
+.collector-cell.active {
+  background: linear-gradient(180deg, #ffe27a 0%, #e0a000 55%, #b06a00 100%) !important;
+  border: 2px solid #fff8d0 !important;
+  box-shadow: inset 0 0 12px #fff6, 0 0 14px #ffd24a66 !important;
+}
+.collector-cell.active .collector-value,
+.collector-cell.active b {
+  color: #2a0a40 !important;
+  text-shadow: none !important;
+  font-size: clamp(15px, 4cqw, 22px) !important;
+  font-weight: 900;
+}
+.collector-cell.active img {
+  /* Tint / reduce the plain coin so it reads as a "collector" not a prize coin */
+  filter: brightness(0.85) sepia(0.4) hue-rotate(-10deg) drop-shadow(0 1px 2px #0006);
+  height: 42% !important;
+  opacity: 0.9;
+}
+.collector-cell .collector-placeholder {
+  color: #c9a227cc !important;
+  font-size: clamp(9px, 2.4cqw, 12px) !important;
+  letter-spacing: 0.04em;
+}
+
+/* Respins badge – clearer and higher contrast */
+.respins-badge {
+  background: linear-gradient(180deg, #6b2bb8, #3a0a6e);
+  border: 2px solid #ffd24a;
+  font-size: clamp(13px, 3.6cqw, 17px);
+  padding: 7px 16px;
+  box-shadow: 0 4px 12px #000a;
+}
+.respins-badge b {
+  min-width: 30px;
+  height: 30px;
+  font-size: 1.1em;
+}
+
+/* Bonus spin button – slightly larger touch target + clearer press */
+.bonus-spin-btn {
+  width: clamp(72px, 20vw, 92px);
+  height: clamp(72px, 20vw, 92px);
+  border-width: 5px;
+  transition: transform 0.12s, filter 0.12s, box-shadow 0.12s;
+}
+.bonus-spin-btn:active {
+  transform: scale(0.92);
+  filter: brightness(1.08);
+}
+
+/* TOTAL label – keep visible styling ready (JS still controls show/hide) */
+.bonus-total {
+  font-size: clamp(14px, 3.8cqw, 18px);
+  background: rgba(0,0,0,.45);
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid #ffcf5255;
+}
+
+/* --- Main game status hierarchy --- */
+.status .balance b,
+.status .bet-value b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Soften the heaviest competing glows on control buttons so the background can breathe */
+.ctl {
+  box-shadow: 0 3px 0 #56002f, 0 6px 10px #0009, inset 0 -5px 8px #5a003055, inset 0 2px 2px #ffffff66;
+}
+.ctl.active {
+  box-shadow: 0 3px 0 #1c0036, 0 6px 10px #0009, 0 0 12px #ffd24a88, inset 0 -5px 8px #1c003688, inset 0 2px 2px #ffffff66;
+}
+
+/* Win banner – slightly cleaner */
+.win-banner {
+  font-size: clamp(14px, 4cqw, 26px);
+  letter-spacing: 0.4px;
+}
+
+/* Better focus ring for accessibility */
+.controls button:focus-visible,
+.bonus-spin-btn:focus-visible,
+.bet-option:focus-visible,
+.dialog-primary:focus-visible,
+.dialog-secondary:focus-visible {
+  outline: 3px solid #fff3a0;
+  outline-offset: 3px;
+}
+
+/* Dialog text readability */
+.game-dialog h2 {
+  font-size: clamp(22px, 5.5cqw, 32px);
+}
+.bet-option,
+.dialog-primary,
+.dialog-secondary {
+  min-height: 44px;
+  font-size: clamp(14px, 3.6cqw, 17px);
+}
+
+/* Reduce motion-blur intensity a bit so symbols stay more readable while spinning */
+.spinning-reel .symbol {
+  filter: blur(1.6px) drop-shadow(0 3px 2px #12000a99);
+  transform: scaleY(1.04);
+}
+
+
+/* =====================================================================
+   Real reel strip scroll + settle bounce
+   ===================================================================== */
+.symbols.is-strip {
+  display: block;
+  padding: 0;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  will-change: transform;
+  animation: reelStripScroll var(--reel-dur, 0.42s) linear infinite;
+}
+.reel-strip .symbol {
+  flex: 0 0 calc(100% / 3);
+  height: calc(100% / 3);
+  width: 88%;
+  object-fit: contain;
+  padding: 2px 0;
+}
+.spinning-reel .reel-strip .symbol {
+  filter: blur(1.2px) drop-shadow(0 3px 2px #12000a99);
+}
+@keyframes reelStripScroll {
+  from { transform: translateY(-33.333%); }
+  to   { transform: translateY(0); }
+}
+.reel-strip.reel-settle {
+  animation: reelSettle 0.4s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+}
+@keyframes reelSettle {
+  0%   { transform: translateY(-66.666%); }
+  65%  { transform: translateY(3%); }
+  100% { transform: translateY(0); }
+}
+
+/* =====================================================================
+   Win FX: coin shower + screen shake
+   ===================================================================== */
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  overflow: hidden;
+}
+.fx-coin {
+  position: absolute;
+  top: -8%;
+  font-size: clamp(14px, 4.5cqw, 28px);
+  color: #ffd24a;
+  text-shadow: 0 0 8px #ffb62d, 0 2px 2px #0008;
+  animation: coinFall 1.2s ease-in forwards;
+  opacity: 0.95;
+}
+@keyframes coinFall {
+  0%   { transform: translateY(0) rotate(0deg) scale(0.6); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(420deg) scale(1); opacity: 0.15; }
+}
+.game.screen-shake {
+  animation: screenShake 0.55s ease-out;
+}
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-2px, -1px); }
+  80% { transform: translate(2px, 1px); }
+}
+
+/* =====================================================================
+   Idle atmosphere
+   ===================================================================== */
+.game.idle-on .reel-frame.idle-glow {
+  animation: idleFrameGlow 3.2s ease-in-out infinite;
+}
+@keyframes idleFrameGlow {
+  0%, 100% { box-shadow: inset 0 0 0 1px #fff1a0, inset 0 0 20px #ffb62d44, 0 2px 5px #26000f99; }
+  50% { box-shadow: inset 0 0 0 1px #fff7c0, inset 0 0 28px #ffd24a66, 0 2px 8px #26000f99, 0 0 18px #ffb62d33; }
+}
+.game.idle-on:not(.bonus-active) .symbol {
+  animation: idleSymbolBob 4s ease-in-out infinite;
+}
+.game.idle-on .reel:nth-child(2) .symbol { animation-delay: 0.4s; }
+.game.idle-on .reel:nth-child(3) .symbol { animation-delay: 0.8s; }
+@keyframes idleSymbolBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5%); }
+}
+.game.spinning-reel .symbol,
+.spinning-reel .symbol {
+  animation: none !important;
+}
+
+/* =====================================================================
+   Press depth feedback
+   ===================================================================== */
+.controls button.btn-press,
+.bonus-spin-btn.btn-press,
+.ctl.btn-press {
+  transform: scale(0.92) translateY(2px) !important;
+  filter: brightness(0.95);
+  box-shadow: 0 1px 0 #56002f, 0 2px 4px #0008 !important;
+  transition: transform 0.08s, filter 0.08s, box-shadow 0.08s;
+}
+.spin.btn-press {
+  transform: scale(0.93) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reel-strip { animation-duration: 1.2s !important; }
+  .fx-coin, .game.screen-shake, .idle-glow, .idleSymbolBob { animation: none !important; }
+  .game.idle-on .symbol { animation: none !important; }
+}
