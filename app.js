@@ -243,15 +243,21 @@ function updateBootServer(connected) {
   tryFinishBoot();
 }
 function tryFinishBoot() {
-  if (!bootAssetsReady || !bootServerReady) return;
+  // Enter the game as soon as assets are ready. Socket can connect in the background.
+  if (!bootAssetsReady) return;
   const screen = document.getElementById("startupScreen");
   if (!screen || screen.classList.contains("is-leaving")) return;
   const label = document.getElementById("startupProgressLabel");
-  if (label) label.textContent = "Everything is ready — entering game…";
+  if (label) {
+    label.textContent = bootServerReady
+      ? "Everything is ready — entering game…"
+      : "Graphics ready — connecting to server…";
+  }
   screen.classList.add("is-leaving");
   window.setTimeout(() => {
     screen.hidden = true;
     document.body.classList.add("game-ready");
+    if (!bootServerReady) showToast("Connecting to game server…");
   }, 650);
 }
 async function preloadBootAssets() {
@@ -370,13 +376,65 @@ function symbolImg(name) {
   return img;
 }
 function setReelSymbols(reel, names) {
-  reel.querySelector(".symbols").replaceChildren(...names.map(symbolImg));
+  const box = reel.querySelector(".symbols");
+  box.classList.remove("is-strip");
+  box.replaceChildren(...names.map(symbolImg));
 }
+
+/* ---------- Continuous reel strip (real scroll instead of img flicker) ---------- */
+const REEL_STRIP_LEN = 30;
+function buildReelStrip(names) {
+  const strip = document.createElement("div");
+  strip.className = "reel-strip";
+  names.forEach(n => strip.appendChild(symbolImg(n)));
+  return strip;
+}
+function startReelStripSpin(reel, reelIndex, session) {
+  const box = reel.querySelector(".symbols");
+  box.classList.add("is-strip");
+  const names = [];
+  for (let i = 0; i < REEL_STRIP_LEN; i++) {
+    const teasing = session.anticipating && reelIndex === session.third;
+    names.push(teasing && Math.random() < 0.18 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+  }
+  const strip = buildReelStrip(names);
+  box.replaceChildren(strip);
+  reel.classList.add("spinning-reel");
+  // Speed via CSS variable (fast mode uses shorter duration)
+  strip.style.setProperty("--reel-dur", fastMode ? "0.28s" : "0.42s");
+}
+function stopReelStrip(reel, finalNames) {
+  const box = reel.querySelector(".symbols");
+  reel.classList.remove("spinning-reel", "anticipate-reel");
+  // Put the final 3 symbols at the TOP of a short strip, animate them dropping in
+  const lead = [];
+  for (let i = 0; i < 6; i++) lead.push(pickWeightedSymbol());
+  const finalStrip = buildReelStrip([...lead, ...finalNames]);
+  box.classList.add("is-strip");
+  box.replaceChildren(finalStrip);
+  // Start offset so finals are just above view, then settle to 0 (finals visible)
+  finalStrip.style.transform = "translateY(-66.666%)";
+  void finalStrip.offsetWidth;
+  finalStrip.classList.add("reel-settle");
+  finalStrip.addEventListener("animationend", () => {
+    setReelSymbols(reel, finalNames);
+  }, { once: true });
+  // Safety: if animationend is missed, still show finals
+  setTimeout(() => {
+    if (box.querySelector(".reel-strip")) setReelSymbols(reel, finalNames);
+  }, 500);
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   clearTimeout(showToast.t);
   showToast.t = setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
+/* ---------- Haptics + press feedback ---------- */
+function haptic(ms = 12) {
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
 }
 function updateBalance() { balanceEl.textContent = balance.toFixed(2); }
 function updateBet() { betValueEl.textContent = betAmount.toFixed(2); }
@@ -534,8 +592,8 @@ function startCoinCollection(session) {
   game.classList.add("bonus-active");
   bonusPage.hidden = false;
   bonusPage.setAttribute("aria-hidden", "false");
-  // Hide running total during play
-  if (bonusTotalWrap) bonusTotalWrap.style.display = "none";
+  // Keep TOTAL visible so the player sees the build-up
+  if (bonusTotalWrap) bonusTotalWrap.style.display = "";
   bonusCollectBtn.hidden = true;
   renderCollectorBoard();
   // Show the landed coins' value arriving in the first collector.
@@ -568,14 +626,14 @@ function randomSpinStrip() {
   return items.join("");
 }
 
-/** Collector spin strip: gold coins only (for empty collector slots). */
+/** Collector spin strip: uses an existing coin asset (gold_coin.png is not in the manifest). */
 function randomCollectorStrip() {
   const items = [];
   for (let i = 0; i < 5; i++) {
     if (Math.random() < 0.3) {
       items.push(`<div class="strip-empty"></div>`);
     } else {
-      items.push(`<div class="strip-item"><img src="assets/gold_coin.png" alt=""><span class="strip-label">+</span></div>`);
+      items.push(`<div class="strip-item"><img src="assets/crown_coin.png" alt=""><span class="strip-label">+</span></div>`);
     }
   }
   items.push(items[0]);
@@ -601,8 +659,9 @@ function collectorCellHtml(value, spinning, isNew) {
     return `<div class="collector-cell empty"><span class="collector-placeholder">COLLECTOR</span></div>`;
   }
   const cls = isNew ? "collector-cell active new-flash" : "collector-cell active";
+  // Use crown coin so collectors read differently from the numbered prize coins
   return `<div class="${cls}">
-    <img src="assets/coin_1.png" alt="collector">
+    <img src="assets/crown_coin.png" alt="collector">
     <b class="collector-value">${value}</b>
   </div>`;
 }
@@ -629,20 +688,24 @@ function updateBonusUI() {
   const b = bonusState;
   respinsEl.textContent = b.respins;
   b.total = b.collectors.reduce((s, v) => s + v, 0);
-  // TOTAL stays hidden during play
-  if (bonusTotalWrap) bonusTotalWrap.style.display = "none";
+  // Always show and update the running total
+  if (bonusTotalEl) bonusTotalEl.textContent = b.total;
+  if (bonusTotalWrap) bonusTotalWrap.style.display = "";
 
   if (b.finished) {
     bonusSpinBtn.disabled = true;
-    bonusCollectBtn.hidden = true;
+    // Let the player collect / exit immediately instead of only waiting for the auto timer
+    bonusCollectBtn.hidden = false;
     return;
   }
   const done = b.respins <= 0 && !b.animating;
   const stoppable = b.animating && !b.holding;   // STOP is only valid while reels are still moving
   bonusSpinBtn.disabled = done || !!b.holding;
+  // Collect only appears when the bonus is finished
   bonusCollectBtn.hidden = true;
   bonusSpinBtn.classList.toggle("spinning", stoppable);
-  bonusSpinBtn.querySelector(".bonus-spin-icon").textContent = stoppable ? "■" : "⟳";
+  const icon = bonusSpinBtn.querySelector(".bonus-spin-icon");
+  if (icon) icon.textContent = stoppable ? "■" : "⟳";
 }
 
 function makeCollectionOutcome() {
@@ -816,6 +879,9 @@ function endBonusSpin() {
         el.insertAdjacentHTML("beforeend", `<span class="collector-gain">+${b.coinSum}</span>`);
       }
       GameAudio.play("coin");
+      haptic(12);
+      // Escalating spectacle as the pot grows
+      if (b.coinSum >= 10 || b.total >= 50) spawnCoinShower(Math.min(18, 8 + Math.floor(b.coinSum / 5)));
     }
     updateBonusUI();
 
@@ -885,7 +951,15 @@ function exitBonusToMain() {
 }
 
 function finishCoinCollection() {
-  autoFinishCollection();
+  const b = bonusState;
+  if (!b) return;
+  // If still playing, force the end sequence. If already finished, just exit now.
+  if (!b.finished) {
+    autoFinishCollection();
+  } else {
+    clearTimeout(b.autoReturnTimer);
+    exitBonusToMain();
+  }
 }
 
 // STOP button must work while spinning
@@ -1155,27 +1229,27 @@ function previewSymbols(reelIndex, session) {
   return Array.from({length: 3}, () => (teasing && Math.random() < 0.15) ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
 }
 function clearSession(session) {
-  session.intervals.forEach(clearInterval);
-  session.reelTimers.forEach(clearTimeout);
-  session.timers.forEach(clearTimeout);
-  clearInterval(session.countdown);
+  (session.intervals || []).forEach(clearInterval);
+  (session.reelTimers || []).forEach(clearTimeout);
+  (session.timers || []).forEach(clearTimeout);
+  if (session.countdown) clearInterval(session.countdown);
 }
 function landReel(session, i) {
   if (session.landed[i] || session.finished) return;
   session.landed[i] = true;
-  clearInterval(session.intervals[i]);
-  clearTimeout(session.reelTimers[i]);
+  if (session.intervals[i]) clearInterval(session.intervals[i]);
+  if (session.reelTimers[i]) clearTimeout(session.reelTimers[i]);
   const reel = reels[i];
-  reel.classList.remove("spinning-reel", "anticipate-reel");
-  setReelSymbols(reel, session.finalSets[i]);
+  stopReelStrip(reel, session.finalSets[i]);
   GameAudio.play("stop");
+  haptic(8);
   if (session.landed.every(Boolean)) {
-    session.timers.push(setTimeout(() => finishSpin(session), 60));
+    session.timers.push(setTimeout(() => finishSpin(session), 280));
   } else {
     maybeStartAnticipation(session);
   }
 }
-// Two coins are on the board and one reel is left: keep it spinning for 30 seconds.
+// Two coins are on the board and one reel is left: keep it spinning with suspense.
 function maybeStartAnticipation(session) {
   if (session.third < 0 || session.anticipating || session.landed[session.third]) return;
   const others = [0, 1, 2].filter(i => i !== session.third);
@@ -1184,10 +1258,11 @@ function maybeStartAnticipation(session) {
   session.anticipating = true;
   game.classList.add("anticipating");
   reels[session.third].classList.add("anticipate-reel");
+  // Rebuild the last reel strip with more coin teases
+  startReelStripSpin(reels[session.third], session.third, session);
   markCoins(session, "coin-wait");
   GameAudio.play("coin");
 
-  // Keep the suspense effect without exposing a countdown timer.
   banner.textContent = "ONE MORE COIN!";
   banner.classList.add("show", "suspense");
   session.timers.push(setTimeout(() => landReel(session, session.third), ANTICIPATION_MS));
@@ -1258,12 +1333,10 @@ function finishSpin(session) {
   updateBalance();
   if (payout > 0) {
     const bigWin = isBigWin(wins);
-    banner.textContent = (bigWin ? "BIG WIN! " : "WIN ") + money(payout);
-    banner.classList.add("show");
-    if (bigWin) game.classList.add("big-win");
     if (wins.length) showWinLines(wins);
     showToast(wins.length ? `${wins.length} winning line${wins.length === 1 ? "" : "s"}!` : "BONUS WIN!");
     GameAudio.play(bigWin ? "bigWin" : "win");
+    celebrateWin(payout, bigWin);
   }
   spinning = false; activeSpin = null;
   spinBtn.classList.remove("spinning"); spinBtn.classList.add("stopped");
@@ -1276,8 +1349,51 @@ function finishSpin(session) {
   if (auto) {
     if (autoRemaining <= 0) stopAuto("Auto spin finished");
     else if (balance < betAmount) stopAuto("Auto spin stopped — balance too low");
-    else scheduleAuto(payout > 0 ? 1100 : (fastMode ? 250 : 450));
+    else scheduleAuto(payout > 0 ? 1400 : (fastMode ? 250 : 450));
   }
+}
+
+/* ---------- Win celebration: count-up, coin shower, screen shake ---------- */
+function celebrateWin(payout, bigWin) {
+  const label = bigWin ? "BIG WIN!" : "WIN";
+  banner.classList.add("show");
+  if (bigWin) {
+    game.classList.add("big-win", "screen-shake");
+    setTimeout(() => game.classList.remove("screen-shake"), 600);
+    haptic([20, 40, 20, 40, 30]);
+  } else {
+    haptic(15);
+  }
+  spawnCoinShower(bigWin ? 28 : 14);
+  // Count-up the banner amount
+  const target = payout;
+  const start = performance.now();
+  const dur = bigWin ? 1100 : 650;
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const val = target * eased;
+    banner.textContent = label + " " + money(val);
+    if (t < 1) requestAnimationFrame(tick);
+    else banner.textContent = label + " " + money(target);
+  }
+  requestAnimationFrame(tick);
+}
+function spawnCoinShower(count) {
+  const layer = document.createElement("div");
+  layer.className = "fx-layer";
+  game.appendChild(layer);
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement("span");
+    c.className = "fx-coin";
+    c.textContent = "●";
+    const x = 10 + Math.random() * 80;
+    const delay = Math.random() * 0.45;
+    const dur = 0.9 + Math.random() * 0.7;
+    c.style.cssText = `left:${x}%;animation-delay:${delay}s;animation-duration:${dur}s;`;
+    layer.appendChild(c);
+  }
+  setTimeout(() => layer.remove(), 2200);
 }
 
 let hc2Socket = null, pendingRequestId = null, requestCounter = 0;
@@ -1339,9 +1455,15 @@ function connectHC2() {
     const session=activeSpin; pendingRequestId=null;
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
-    const durations=fastMode?[270,360,450]:[570,650,740];
-    reels.forEach((reel,i)=>{
-      session.reelTimers[i]=setTimeout(()=>landReel(session,i),durations.slice(0,i+1).reduce((a,v)=>a+v,0));
+    // If exactly two reels show a coin, hold the empty one for anticipation
+    const coinReels = [0,1,2].filter(r => session.finalSets[r].some(isCoin));
+    session.third = (coinReels.length === 2) ? [0,1,2].find(r => !coinReels.includes(r)) : -1;
+    const step = fastMode ? 320 : 620;
+    let order = 0;
+    [0,1,2].forEach(i => {
+      if (i === session.third) return; // held for anticipation
+      const delay = step * (++order);
+      session.reelTimers[i] = setTimeout(() => landReel(session, i), delay);
     });
   });
 }
@@ -1356,17 +1478,19 @@ function spin() {
   clearTimeout(autoTimer); spinning=true;
   if(auto){autoRemaining--;updateAutoBadge();}
   banner.classList.remove("show","suspense");banner.textContent="";clearWinLines();
-  spinBtn.classList.add("spinning");spinBtn.classList.remove("stopped");
+  game.classList.remove("big-win");
+  spinBtn.classList.add("spinning","btn-press");spinBtn.classList.remove("stopped");
+  setTimeout(() => spinBtn.classList.remove("btn-press"), 140);
   spinBtn.setAttribute("aria-label","Waiting for server result");
   const icon=spinBtn.querySelector("span");if(icon)icon.textContent="■";
   GameAudio.play("spin");
+  haptic(18);
   const session={finalGrid:null,finalSets:null,third:-1,serverResult:null,serverBonus:null,
     intervals:[null,null,null],reelTimers:[null,null,null],timers:[],landed:[false,false,false],
     anticipating:false,finished:false,countdown:null};
   activeSpin=session;
   reels.forEach((reel,i)=>{
-    reel.classList.add("spinning-reel");
-    session.intervals[i]=setInterval(()=>setReelSymbols(reel,previewSymbols(i,session)),fastMode?15:20);
+    startReelStripSpin(reel, i, session);
   });
   pendingRequestId=`hc2-${Date.now()}-${++requestCounter}`;
   hc2Socket.emit("hc2Spin",{requestId:pendingRequestId,bet:betAmount});
@@ -1388,13 +1512,30 @@ updateBalance();
 updateBet();
 updateAutoBadge();
 
-// Small click sound on every button (the spin button has its own sound).
-game.addEventListener("click", event => {
+// Small click sound + press feedback on every button (spin has its own sound).
+game.addEventListener("pointerdown", event => {
   const btn = event.target.closest("button");
-  if (btn && btn.id !== "spin" && !btn.dataset.toggle) GameAudio.play("click");
+  if (!btn) return;
+  btn.classList.add("btn-press");
+  haptic(btn.id === "spin" ? 18 : 10);
+  if (btn.id !== "spin" && !btn.dataset.toggle) GameAudio.play("click");
+});
+game.addEventListener("pointerup", event => {
+  const btn = event.target.closest("button");
+  if (btn) btn.classList.remove("btn-press");
+});
+game.addEventListener("pointerleave", event => {
+  const btn = event.target.closest("button");
+  if (btn) btn.classList.remove("btn-press");
 });
 
-spinBtn.addEventListener("click", spin);
+spinBtn.addEventListener("click", () => {
+  if (spinning && activeSpin && activeSpin.serverResult) {
+    requestStop();
+    return;
+  }
+  spin();
+});
 fastBtn.addEventListener("click", () => {
   fastMode = !fastMode;
   fastBtn.classList.toggle("active", fastMode);
@@ -1406,3 +1547,25 @@ autoBtn.addEventListener("click", () => {
 });
 document.getElementById("menu").addEventListener("click", openSettings);
 betBtn.addEventListener("click", openBetSelector);
+
+/* ---------- Idle atmosphere (subtle motion while waiting) ---------- */
+function startIdleFx() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  game.classList.add("idle-on");
+  // Soft shimmer pulse on the reel frame
+  const frame = document.querySelector(".reel-frame");
+  if (frame) frame.classList.add("idle-glow");
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) game.classList.remove("idle-on");
+  else if (!spinning && !celebrating) game.classList.add("idle-on");
+});
+// Start idle once the game is revealed
+const bootObserver = new MutationObserver(() => {
+  if (document.body.classList.contains("game-ready")) {
+    startIdleFx();
+    bootObserver.disconnect();
+  }
+});
+bootObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+if (document.body.classList.contains("game-ready")) startIdleFx();
