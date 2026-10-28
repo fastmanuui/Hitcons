@@ -418,8 +418,13 @@ function startReelStripSpin(reel, reelIndex, session) {
     names.push(teasing && Math.random() < 0.22 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
   }
   // Long strip so motion is obvious
-  names.push(...names.slice(0, 9));
-  const strip = buildReelStrip(names, cellH);
+  // Repeat symbols before and after the strip for seamless downward motion
+  const loopNames = [
+     ...names.slice(-9),
+     ...names,
+     ...names.slice(0, 9)
+  ];
+  const strip = buildReelStrip(loopNames, cellH);
   strip.style.cssText = "display:flex;flex-direction:column;align-items:center;width:100%;will-change:transform;animation:none;";
   box.replaceChildren(strip);
   reel.classList.add("spinning-reel");
@@ -427,7 +432,7 @@ function startReelStripSpin(reel, reelIndex, session) {
   // Pixels per second — clearly visible vertical scroll
   let speed = fastMode ? 1200 : 700;
   if (session.anticipating && reelIndex === session.third) speed = 1700;
-  let offset = 0;
+  let offset = -9* cellH;
   let last = performance.now();
   if (!session.raf) session.raf = [null, null, null];
 
