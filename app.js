@@ -438,8 +438,11 @@ function startReelStripSpin(reel, reelIndex, session) {
     const dt = Math.min(48, now - last);
     last = now;
     offset += speed * (dt / 1000);
-    if (offset >= cellH) offset %= cellH;
-    strip.style.transform = "translate3d(0," + (-offset) + "px,0)";
+
+    // Loop only after one complete cycle of the reel strip. 
+    const cycleHeight = REEL_STRIP_LEN * cellH;
+    if (offset >= cycleHeight) offset %= cycleHeight;
+       strip.style.transform = "translate3d(0," + (-offset) + "px,0)";
     session.raf[reelIndex] = requestAnimationFrame(tick);
   };
   session.raf[reelIndex] = requestAnimationFrame(tick);
