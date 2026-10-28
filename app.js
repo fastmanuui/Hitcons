@@ -395,50 +395,35 @@ function startReelStripSpin(reel, reelIndex, session) {
   const names = [];
   for (let i = 0; i < REEL_STRIP_LEN; i++) {
     const teasing = session.anticipating && reelIndex === session.third;
-    names.push(teasing && Math.random() < 0.18 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+    names.push(teasing && Math.random() < 0.22 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
   }
   const strip = buildReelStrip(names);
   box.replaceChildren(strip);
-  // Speed: shorter = faster visual spin
-  strip.style.setProperty("--reel-dur", fastMode ? "0.11s" : "0.16s");
-  // Add spinning class AFTER strip is in the DOM so animation starts cleanly
+  // Speed: shorter duration = faster spin. Anticipation reel is intentionally very fast.
+  let dur = fastMode ? "0.08s" : "0.14s";
+  if (session.anticipating && reelIndex === session.third) dur = "0.06s";
+  strip.style.setProperty("--reel-dur", dur);
   requestAnimationFrame(() => {
     reel.classList.add("spinning-reel");
   });
 }
 function stopReelStrip(reel, finalNames) {
   const box = reel.querySelector(".symbols");
-  // Kill spin loop first so it cannot restart
+  // Kill spin completely — no intermediate strip (that was causing the symbol swap)
   reel.classList.remove("spinning-reel", "anticipate-reel");
   const old = box.querySelector(".reel-strip");
   if (old) {
     old.style.animation = "none";
-    old.classList.remove("reel-settle");
+    old.remove();
   }
-  // Short strip: a few blur symbols, then the 3 finals at the end
-  // We animate from showing the middle to the finals (translateY 0 = top of strip visible)
-  // Layout: [pad0, pad1, pad2, final0, final1, final2] — start at -50% so finals slide in
-  const pad = [];
-  for (let i = 0; i < 3; i++) pad.push(pickWeightedSymbol());
-  const finalStrip = buildReelStrip([...pad, ...finalNames]);
-  finalStrip.style.animation = "none";
-  finalStrip.style.transform = "translateY(-50%)";
-  box.classList.add("is-strip");
-  box.replaceChildren(finalStrip);
-  // Next frame: run settle only (no infinite scroll)
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      finalStrip.classList.add("reel-settle");
-    });
+  // Show the REAL final symbols immediately, with a short land-pop bounce
+  setReelSymbols(reel, finalNames);
+  const imgs = box.querySelectorAll(".symbol");
+  imgs.forEach((img, idx) => {
+    img.classList.add("symbol-land");
+    img.style.setProperty("--land-delay", (idx * 40) + "ms");
+    img.addEventListener("animationend", () => img.classList.remove("symbol-land"), { once: true });
   });
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    setReelSymbols(reel, finalNames);
-  };
-  finalStrip.addEventListener("animationend", finish, { once: true });
-  setTimeout(finish, 400);
 }
 
 function showToast(message) {
@@ -1036,11 +1021,22 @@ function spawnCoinFx(img) {
 // 3 coins: let the player see them (a "breath") before the full-page Hold & Spin.
 function celebrateCoins(session) {
   celebrating = true;
-  game.classList.add("coin-spotlight");
+  // Ensure every reel shows the real final symbols before we glow them
+  reels.forEach((reel, i) => {
+    if (session.finalSets && session.finalSets[i]) setReelSymbols(reel, session.finalSets[i]);
+  });
+  game.classList.remove("coin-wait");
   game.querySelectorAll(".coin-wait").forEach(el => el.classList.remove("coin-wait"));
+  game.classList.add("coin-spotlight", "screen-shake");
+  setTimeout(() => game.classList.remove("screen-shake"), 600);
+  // Mark ALL coins on the board (all 3 reels are landed)
   const coinImgs = markCoins(session, "coin-hit");
-  coinImgs.forEach(spawnCoinFx);
-  GameAudio.play("coin");
+  coinImgs.forEach((img, idx) => {
+    img.classList.add("coin-land-burst");
+    setTimeout(() => spawnCoinFx(img), idx * 80);
+  });
+  GameAudio.play("bonus");
+  haptic([30, 40, 30, 40, 50]);
   const coinNames = session.finalSets.flat().filter(isCoin);
   clearTimeout(celebrationTimer);
   celebrationTimer = setTimeout(() => showBonusOverlay(coinNames, session), BONUS_BREATH_MS);
@@ -1256,11 +1252,32 @@ function landReel(session, i) {
   if (session.intervals[i]) clearInterval(session.intervals[i]);
   if (session.reelTimers[i]) clearTimeout(session.reelTimers[i]);
   const reel = reels[i];
+  const wasAnticipating = session.anticipating && i === session.third;
   stopReelStrip(reel, session.finalSets[i]);
   GameAudio.play("stop");
   haptic(8);
+
+  // Third coin just landed after anticipation — glow it + shake
+  if (wasAnticipating && session.finalSets[i].some(isCoin)) {
+    game.classList.add("screen-shake");
+    setTimeout(() => game.classList.remove("screen-shake"), 550);
+    haptic([25, 30, 25, 30, 40]);
+    // Mark all coins (including the one that just landed) once symbols are in place
+    requestAnimationFrame(() => {
+      markCoins(session, "coin-hit");
+      const justLanded = reel.querySelectorAll(".symbol");
+      session.finalSets[i].forEach((name, row) => {
+        if (isCoin(name) && justLanded[row]) {
+          justLanded[row].classList.add("coin-hit", "coin-land-burst");
+          spawnCoinFx(justLanded[row]);
+        }
+      });
+    });
+    GameAudio.play("coin");
+  }
+
   if (session.landed.every(Boolean)) {
-    session.timers.push(setTimeout(() => finishSpin(session), 360));
+    session.timers.push(setTimeout(() => finishSpin(session), 220));
   } else {
     maybeStartAnticipation(session);
   }
@@ -1274,7 +1291,7 @@ function maybeStartAnticipation(session) {
   session.anticipating = true;
   game.classList.add("anticipating");
   reels[session.third].classList.add("anticipate-reel");
-  // Rebuild the last reel strip with more coin teases
+  // Rebuild the last reel with a VERY fast spin + more coin teases
   startReelStripSpin(reels[session.third], session.third, session);
   markCoins(session, "coin-wait");
   GameAudio.play("coin");
@@ -1474,7 +1491,7 @@ function connectHC2() {
     // If exactly two reels show a coin, hold the empty one for anticipation
     const coinReels = [0,1,2].filter(r => session.finalSets[r].some(isCoin));
     session.third = (coinReels.length === 2) ? [0,1,2].find(r => !coinReels.includes(r)) : -1;
-    const step = fastMode ? 320 : 620;
+    const step = fastMode ? 160 : 520;
     let order = 0;
     [0,1,2].forEach(i => {
       if (i === session.third) return; // held for anticipation
