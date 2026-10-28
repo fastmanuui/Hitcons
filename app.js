@@ -420,9 +420,9 @@ function startReelStripSpin(reel, reelIndex, session) {
   // Long strip so motion is obvious
   // Repeat symbols before and after the strip for seamless downward motion
   const loopNames = [
-     ...names.slice(-9),
-     ...names,
-     ...names.slice(0, 9)
+   ...names,
+   ...names,
+   ...names
   ];
   const strip = buildReelStrip(loopNames, cellH);
   strip.style.cssText = "display:flex;flex-direction:column;align-items:center;width:100%;will-change:transform;animation:none;";
@@ -432,7 +432,7 @@ function startReelStripSpin(reel, reelIndex, session) {
   // Pixels per second — clearly visible vertical scroll
   let speed = fastMode ? 1200 : 700;
   if (session.anticipating && reelIndex === session.third) speed = 1700;
-  let offset = -9* cellH;
+  let offset = -REEL_STRIP_LEN * cellH;
   let last = performance.now();
   if (!session.raf) session.raf = [null, null, null];
 
@@ -444,14 +444,14 @@ function startReelStripSpin(reel, reelIndex, session) {
     last = now;
     offset += speed * (dt / 1000);
 
-    // Loop only after one complete cycle of the reel strip. 
-    
-      // Loop seamlessly through the repeated symbols
-    if (offset >= 15 * cellH) offset = -9 * cellH;
-      strip.style.transform = "translate3d(0," + offset + "px,0)";
-    session.raf[reelIndex] = requestAnimationFrame(tick);
+    // Reset at the matching repeated strip boundary
+ if (offset >= 0) {
+       offset -= REEL_STRIP_LEN * cellH;
+ }
+ strip.style.transform = "translate3d(0," + offset + "px,0)";
+ session.raf[reelIndex] = requestAnimationFrame(tick);
   };
-  session.raf[reelIndex] = requestAnimationFrame(tick);
+ session.raf[reelIndex] = requestAnimationFrame(tick);
 }
 function stopReelStrip(reel, finalNames, session, reelIndex) {
   if (session) stopReelRaf(session, reelIndex);
