@@ -10,7 +10,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .symbol{display:block;width:88%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
 .reel:nth-child(3) .symbol{width:90%}
 /* Motion blur while symbols are moving. */
-.spinning-reel .symbol{filter:blur(2.2px) drop-shadow(0 4px 2px #12000a99);transform:scaleY(1.06)}
+.spinning-reel .symbol{filter:blur(0.9px) drop-shadow(0 2px 2px #12000a99)}
 .spinning-reel .symbols{will-change:filter,transform}
 .win-banner{position:absolute;left:14%;width:72%;top:61.7%;z-index:4;text-align:center;font-weight:1000;font-size:clamp(12px,3.6vw,25px);font-style:italic;letter-spacing:.5px;color:#fff4a1;text-shadow:0 2px #b80022,2px 3px #7b001a,-1px -1px #fff;border-radius:22px;border:2px solid #ffe7a0;padding:5px 8px;background:linear-gradient(180deg,#ffcf4a,#d6004b 52%,#7b0039);box-shadow:0 3px 0 #65001d,0 0 15px #ff3e80;pointer-events:none;opacity:0;transform:translateY(5px) scale(.96);transition:opacity .2s,transform .2s}
 .win-banner.show{opacity:1;transform:translateY(0) scale(1)}
@@ -1018,8 +1018,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 
 /* Reduce motion-blur intensity a bit so symbols stay more readable while spinning */
 .spinning-reel .symbol {
-  filter: blur(1.6px) drop-shadow(0 3px 2px #12000a99);
-  transform: scaleY(1.04);
+  filter: blur(0.9px) drop-shadow(0 2px 2px #12000a99);
+  /* no scaleY — that looked like shaking instead of spinning */
 }
 
 
@@ -1168,4 +1168,21 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   .reel-strip.reel-settle { animation-duration: 0.2s !important; }
   .fx-coin, .game.screen-shake, .idle-glow, .idleSymbolBob { animation: none !important; }
   .game.idle-on .symbol { animation: none !important; }
+}
+
+/* Gold sparks on the anticipation column (bottom row) */
+.anticipate-spark {
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+  color: #ffe27a;
+  font-size: clamp(14px, 4.5cqw, 26px);
+  text-shadow: 0 0 10px #ffd24a, 0 0 20px #ffb62d, 0 0 4px #fff;
+  transform: translate(-50%, -50%);
+  animation: anticipateSpark 0.9s ease-out infinite;
+}
+@keyframes anticipateSpark {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(0deg); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + 12px), calc(-50% - 28px)) scale(1.2) rotate(50deg); }
 }
