@@ -408,22 +408,25 @@ function stopReelRaf(session, reelIndex) {
 }
 function startReelStripSpin(reel, reelIndex, session) {
   const box = reel.querySelector(".symbols");
-  const cellH = cellHeight(reel);
   stopReelRaf(session, reelIndex);
+  let cellH = cellHeight(reel);
+  if (cellH < 30) cellH = 48;
   box.classList.add("is-strip");
   const names = [];
   for (let i = 0; i < REEL_STRIP_LEN; i++) {
     const teasing = session.anticipating && reelIndex === session.third;
     names.push(teasing && Math.random() < 0.22 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
   }
-  names.push(names[0], names[1], names[2]);
+  // Long strip so motion is obvious
+  names.push(...names.slice(0, 9));
   const strip = buildReelStrip(names, cellH);
+  strip.style.cssText = "display:flex;flex-direction:column;align-items:center;width:100%;will-change:transform;animation:none;";
   box.replaceChildren(strip);
   reel.classList.add("spinning-reel");
 
-  // px per second — higher = faster. Anticipation is intentionally blistering.
-  let speed = fastMode ? 900 : 520;
-  if (session.anticipating && reelIndex === session.third) speed = 1400;
+  // Pixels per second — clearly visible vertical scroll
+  let speed = fastMode ? 1200 : 700;
+  if (session.anticipating && reelIndex === session.third) speed = 1700;
   let offset = 0;
   let last = performance.now();
   if (!session.raf) session.raf = [null, null, null];
@@ -431,10 +434,12 @@ function startReelStripSpin(reel, reelIndex, session) {
   const tick = (now) => {
     if (!session || session.landed[reelIndex] || session.finished) return;
     if (!reel.classList.contains("spinning-reel")) return;
-    const dt = Math.min(32, now - last);
+    if (!strip.isConnected) return;
+    const dt = Math.min(48, now - last);
     last = now;
-    offset = (offset + speed * (dt / 1000)) % cellH;
-    strip.style.transform = `translate3d(0, ${-offset}px, 0)`;
+    offset += speed * (dt / 1000);
+    if (offset >= cellH) offset %= cellH;
+    strip.style.transform = "translate3d(0," + (-offset) + "px,0)";
     session.raf[reelIndex] = requestAnimationFrame(tick);
   };
   session.raf[reelIndex] = requestAnimationFrame(tick);
