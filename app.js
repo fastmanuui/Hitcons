@@ -378,51 +378,69 @@ function symbolImg(name) {
 function setReelSymbols(reel, names) {
   const box = reel.querySelector(".symbols");
   box.classList.remove("is-strip");
+  box.style.removeProperty("--cell-h");
   box.replaceChildren(...names.map(symbolImg));
 }
 
-/* ---------- Continuous reel strip (real scroll instead of img flicker) ---------- */
-const REEL_STRIP_LEN = 30;
-function buildReelStrip(names) {
+/* ---------- Continuous reel strip (stable pixel heights, clean stop) ---------- */
+const REEL_STRIP_LEN = 24;
+function cellHeight(reel) {
+  const h = reel.querySelector(".symbols").clientHeight || reel.clientHeight || 120;
+  return Math.max(24, Math.floor(h / 3));
+}
+function buildReelStrip(names, cellH) {
   const strip = document.createElement("div");
   strip.className = "reel-strip";
-  names.forEach(n => strip.appendChild(symbolImg(n)));
+  names.forEach(n => {
+    const img = symbolImg(n);
+    img.style.height = cellH + "px";
+    img.style.minHeight = cellH + "px";
+    img.style.maxHeight = cellH + "px";
+    img.style.flex = "0 0 " + cellH + "px";
+    strip.appendChild(img);
+  });
   return strip;
 }
 function startReelStripSpin(reel, reelIndex, session) {
   const box = reel.querySelector(".symbols");
+  const cellH = cellHeight(reel);
   box.classList.add("is-strip");
+  box.style.setProperty("--cell-h", cellH + "px");
   const names = [];
   for (let i = 0; i < REEL_STRIP_LEN; i++) {
     const teasing = session.anticipating && reelIndex === session.third;
-    names.push(teasing && Math.random() < 0.22 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
+    names.push(teasing && Math.random() < 0.2 ? pickLandingCoin(reelIndex) : pickWeightedSymbol());
   }
-  const strip = buildReelStrip(names);
+  // Duplicate first 3 at end for a seamless loop feel
+  names.push(names[0], names[1], names[2]);
+  const strip = buildReelStrip(names, cellH);
   box.replaceChildren(strip);
-  // Speed: shorter duration = faster spin. Anticipation reel is intentionally very fast.
-  let dur = fastMode ? "0.08s" : "0.14s";
-  if (session.anticipating && reelIndex === session.third) dur = "0.06s";
-  strip.style.setProperty("--reel-dur", dur);
-  requestAnimationFrame(() => {
-    reel.classList.add("spinning-reel");
-  });
+  // Duration = time to move one cell. Lower = faster.
+  let dur = fastMode ? 0.09 : 0.15;
+  if (session.anticipating && reelIndex === session.third) dur = 0.055;
+  strip.style.setProperty("--reel-dur", dur + "s");
+  strip.style.setProperty("--cell-h", cellH + "px");
+  // Start animation only after layout
+  reel.classList.remove("spinning-reel");
+  void strip.offsetWidth;
+  reel.classList.add("spinning-reel");
 }
 function stopReelStrip(reel, finalNames) {
   const box = reel.querySelector(".symbols");
-  // Kill spin completely — no intermediate strip (that was causing the symbol swap)
+  // Hard stop — remove strip, show exact finals once (no second swap)
   reel.classList.remove("spinning-reel", "anticipate-reel");
   const old = box.querySelector(".reel-strip");
   if (old) {
     old.style.animation = "none";
     old.remove();
   }
-  // Show the REAL final symbols immediately, with a short land-pop bounce
-  setReelSymbols(reel, finalNames);
-  const imgs = box.querySelectorAll(".symbol");
-  imgs.forEach((img, idx) => {
-    img.classList.add("symbol-land");
-    img.style.setProperty("--land-delay", (idx * 40) + "ms");
-    img.addEventListener("animationend", () => img.classList.remove("symbol-land"), { once: true });
+  box.classList.remove("is-strip");
+  box.style.removeProperty("--cell-h");
+  // One shot: the real result. Tiny scale pulse only (does not change the art).
+  box.replaceChildren(...finalNames.map(symbolImg));
+  box.querySelectorAll(".symbol").forEach(img => {
+    img.classList.add("symbol-pop");
+    img.addEventListener("animationend", () => img.classList.remove("symbol-pop"), { once: true });
   });
 }
 
