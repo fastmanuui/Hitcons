@@ -19,6 +19,13 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .controls button:hover{filter:brightness(1.1)}
 .controls button:active{transform:scale(.94)}
 .controls button:focus-visible{outline:3px solid #fff3a0;outline-offset:2px}
+/* Add this at the very END of your stylesheet */
+.box-strip{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;will-change:transform}
+.box-item{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%}
+.bonus-cell .box-item img,
+.collector-cell .box-item img{width:78%;height:82%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
+.box-item .strip-label{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-weight:900;
+  font-size:clamp(8px,2.2vw,11px);color:#ffe27a;text-shadow:0 1px 2px #000;filter:blur(.6px)}
 
 /* --- The 4 control buttons: Settings, Bet, Auto, Fast --- */
 .ctl{
