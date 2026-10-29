@@ -7,7 +7,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .reel{position:relative;min-width:0;min-height:0;overflow:hidden;border-right:3px solid #e9a92b;background:linear-gradient(90deg,#3b001f,#56002c 50%,#39001d)}
 .reel:last-child{border-right:0}
 .symbols{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));align-items:stretch;justify-items:center;gap:0;padding:1.5% 2%;overflow:hidden}
-.symbol{display:block;width:90%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
+.symbol{display:block;width:88%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:3px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
 .reel:nth-child(3) .symbol{width:90%}
 /* Motion blur while symbols are moving. */
 .spinning-reel .symbol{filter:blur(1px)}
@@ -1201,4 +1201,143 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 .game.idle-on .spinning-reel .symbol {
   animation: none !important;
+}
+
+
+/* Hit Coins 2 bonus collector UI upgrade */
+.hold-frame {
+  width: min(96%, 430px);
+  max-width: 430px;
+  aspect-ratio: .96;
+  padding: 2.5%;
+  border-width: 3px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px #fff2a0, inset 0 0 28px #ffb62d44, 0 8px 24px #000c, 0 0 22px #ffcf4a33;
+}
+.collector-board { gap: 7px; }
+.bonus-column { gap: 7px; }
+.bonus-cell, .collector-cell {
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px #ffffff12, 0 3px 8px #0008;
+}
+.bonus-cell.has-coin > img,
+.collector-cell.active > img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px #0009) drop-shadow(0 0 7px #ffd24a55);
+}
+.bonus-cell .coin-label {
+  font-size: clamp(11px, 3vw, 15px);
+  padding: 2px 5px;
+  border: 1px solid #ffe27a99;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #57205e, #270c3c);
+  box-shadow: 0 2px 5px #0008;
+}
+.collector-cell.active .collector-value {
+  font-size: clamp(16px, 4.4vw, 23px);
+  text-shadow: 0 1px 0 #fff5;
+}
+.bonus-win-overlay {
+  padding: 18px;
+  background: radial-gradient(ellipse at center, #270c3be8 0%, #09030df2 72%);
+  backdrop-filter: blur(5px);
+}
+.bonus-result-card {
+  position: relative;
+  width: min(92%, 390px);
+  max-width: 390px;
+  padding: clamp(20px, 5vw, 30px) clamp(18px, 5vw, 30px);
+  overflow: hidden;
+  border: 2px solid #ffe27a;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at top, #742c91 0%, #3a105c 48%, #1b082f 100%);
+  box-shadow: 0 0 0 5px #ffd24a18, 0 0 45px #ffcf4a66, 0 18px 45px #000d;
+  animation: bonusResultPop .45s cubic-bezier(.2,.9,.2,1.2) both;
+}
+.bonus-result-card::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid #ffe27a55;
+  border-radius: 17px;
+  pointer-events: none;
+}
+@keyframes bonusResultPop {
+  from { opacity: 0; transform: translateY(18px) scale(.88); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bonus-result-trophy {
+  font-size: clamp(42px, 12vw, 64px);
+  line-height: 1;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 12px #ffd24a99);
+  animation: bonusTrophyFloat 1.4s ease-in-out infinite;
+}
+@keyframes bonusTrophyFloat { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(3deg); } }
+.bonus-result-kicker {
+  margin: 0 0 7px;
+  color: #ffd9f0;
+  font-size: clamp(10px, 2.8vw, 13px);
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+.bonus-result-card h2 {
+  margin: 0 0 4px;
+  font-size: clamp(25px, 7vw, 36px);
+  color: #fff2a0;
+  text-shadow: 0 2px 0 #7c1d43, 0 0 18px #ffd24a88;
+}
+.bonus-result-card .win-mult {
+  margin: 0;
+  font-size: clamp(40px, 12vw, 60px);
+  line-height: 1.12;
+  color: #fff;
+  font-weight: 1000;
+  text-shadow: 0 0 18px #ffd24a99, 0 3px 0 #5c174d;
+}
+.bonus-result-caption {
+  margin: 8px 0 0;
+  color: #ffd9f0;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+.bonus-result-card .win-amount {
+  margin: 3px 0 18px;
+  color: #ffe88a;
+  font-size: clamp(23px, 6vw, 32px);
+  font-weight: 1000;
+  text-shadow: 0 2px 0 #5b1b36;
+}
+.bonus-result-collect {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 52px;
+  border: 2px solid #fff0a0;
+  border-radius: 14px;
+  padding: 13px 18px;
+  color: #35102f;
+  background: linear-gradient(180deg, #fff28a 0%, #ffc72e 48%, #f59b19 100%);
+  box-shadow: 0 5px 0 #9a4a13, 0 0 22px #ffd24a66;
+  font: inherit;
+  font-size: clamp(15px, 4vw, 18px);
+  font-weight: 1000;
+  letter-spacing: .08em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .12s ease, filter .12s ease;
+}
+.bonus-result-collect:active { transform: translateY(3px); filter: brightness(.96); box-shadow: 0 2px 0 #9a4a13, 0 0 18px #ffd24a66; }
+.bonus-result-collect:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.bonus-result-card .win-note { margin-top: 12px; color: #ffe1f0; font-size: 12px; }
+@media (max-height: 700px) {
+  .hold-frame { width: min(90%, 360px); max-width: 360px; aspect-ratio: 1.05; }
+  .collector-board, .bonus-column { gap: 5px; }
+  .bonus-result-card { padding: 16px 18px; }
+  .bonus-result-trophy { font-size: 42px; margin-bottom: 6px; }
+  .bonus-result-card .win-mult { font-size: clamp(34px, 9vw, 48px); }
+  .bonus-result-card .win-amount { margin-bottom: 12px; }
 }
