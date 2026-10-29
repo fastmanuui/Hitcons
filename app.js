@@ -965,22 +965,34 @@ function autoFinishCollection() {
   showBonusWinOverlay(multiplier, payout);
   GameAudio.play("bigWin");
 
-  b.autoReturnTimer = setTimeout(() => exitBonusToMain(), 5000);
+  // Keep the result dialog open until the player taps COLLECT WIN.
 }
 
 function showBonusWinOverlay(multiplier, payout) {
   const old = bonusPage.querySelector(".bonus-win-overlay");
   if (old) old.remove();
+
   const el = document.createElement("div");
   el.className = "bonus-win-overlay";
   el.innerHTML = `
-    <div class="bonus-win-card">
+    <div class="bonus-win-card bonus-result-card" role="dialog" aria-modal="true" aria-label="Bonus round result">
+      <div class="bonus-result-trophy" aria-hidden="true">🏆</div>
+      <p class="bonus-result-kicker">BONUS ROUND COMPLETE</p>
       <h2>YOU WIN!</h2>
       <p class="win-mult">×${multiplier}</p>
+      <p class="bonus-result-caption">TOTAL BONUS WIN</p>
       <p class="win-amount">${money(payout)}</p>
-      <p class="win-note">Returning to game…</p>
+      <button type="button" class="bonus-result-collect">COLLECT WIN</button>
+      <p class="win-note">Your reward is ready</p>
     </div>`;
+
+  const collectButton = el.querySelector(".bonus-result-collect");
+  collectButton.addEventListener("click", () => {
+    if (bonusState) clearTimeout(bonusState.autoReturnTimer);
+    exitBonusToMain();
+  });
   bonusPage.appendChild(el);
+  collectButton.focus({ preventScroll: true });
 }
 
 function exitBonusToMain() {
