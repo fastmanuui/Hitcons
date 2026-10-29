@@ -28,8 +28,8 @@ const LANDING_MATH = {
 };
 // Relative chance of each coin landing on the LEFT / RIGHT reels (bigger = more common).
 const LANDING_COIN_WEIGHTS = {
-  "coin_1.png": 1.5, "coin_2.png": 1.3, "coin_5.png": 1,
-  "coin_10.png": 0.8, "coin_15.png": 0.5,
+  "coin_1.png": 20, "coin_2.png": 20, "coin_5.png": 20,
+  "coin_10.png": 20, "coin_15.png": 20,
   "crown_coin.png": 1.5,
   "mini.png": 0.3, "minor.png": 0.2, "major.png": 0.1, "grand.png": 0.01
 };
