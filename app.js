@@ -634,7 +634,9 @@ function startCoinCollection(session) {
     autoReturnTimer: null,
     pending: null,
     total: 0,
-    finished: false
+    finished: false,
+    raf: {},
+    queue: []
   };
   game.classList.add("bonus-active");
   bonusPage.hidden = false;
@@ -767,17 +769,19 @@ function makeCollectionOutcome() {
 }
 
 /* ---------- Bonus spin sequencer ----------
- * Order: LEFT column spins -> stops (top to bottom, one box after another) ->
- *        MIDDLE column starts (only its empty collector slots) -> stops ->
- *        RIGHT column starts -> stops.
- * Each box shows ONE symbol at a time. Tapping the button while any reel is still
- * moving stops everything at once and shows the result of that spin; the result is
- * held for a second and only then added to the collectors.
+ * Order: LEFT column boxes (top -> bottom, ONE box at a time) ->
+ *        MIDDLE column (only its empty collector slots, one at a time) ->
+ *        RIGHT column boxes (top -> bottom, one at a time).
+ * Each box spins alone with the same rAF strip engine as the fruit reels,
+ * lands on its result, and only then does the next box start.
+ * Tapping the button while any box is still moving stops everything at once and
+ * shows the result of that spin; the result is held for a moment and only then
+ * added to the collectors.
  */
 const BONUS_COLUMNS = ["left", "mid", "right"];
 const bonusTiming = () => fastMode
-  ? { spin: 520,  gap: 190, between: 150, hold: 800  }
-  : { spin: 1000, gap: 360, between: 280, hold: 1000 };
+  ? { box: 200, gap: 60,  hold: 800  }
+  : { box: 400, gap: 100, hold: 1000 };
 
 function bonusColumnEl(name) {
   return name === "left" ? leftColumnEl : name === "right" ? rightColumnEl : midColumnEl;
@@ -792,17 +796,79 @@ function bonusSpinCells(name) {
   }
   return [0, 1, 2];
 }
-function setBonusCellSpinning(name, idx) {
-  const col = bonusColumnEl(name);
-  const cell = col.children[idx];
-  if (!cell) return;
-  cell.outerHTML = name === "mid" ? collectorCellHtml(null, true, false) : coinCellHtml(null, true);
+
+/* ---- One box at a time, fruit-reel style (rAF strip) ---- */
+function boxItemEl(name, isMid, h) {
+  const d = document.createElement("div");
+  d.className = "box-item";
+  d.style.height = h + "px";
+  if (name) {
+    d.innerHTML = `<img src="assets/${name}" alt="" draggable="false">` +
+      (isMid ? "" : `<span class="strip-label">x${BONUS_COIN_VALUES[name] || 1}</span>`);
+  }
+  return d;
 }
+function stopBoxRaf(name, idx) {
+  const b = bonusState, key = name + idx;
+  if (b && b.raf && b.raf[key]) { cancelAnimationFrame(b.raf[key]); b.raf[key] = null; }
+}
+function startBoxSpin(name, idx) {
+  const b = bonusState;
+  const cell = bonusColumnEl(name).children[idx];
+  if (!b || !cell) return;
+  const isMid = name === "mid";
+  const h = cell.clientHeight || 64;       // one symbol = one box height
+  const N = 6;
+  const names = Array.from({ length: N }, () => {
+    if (Math.random() < (isMid ? 0.3 : 0.22)) return null;   // empty slot
+    return isMid ? "crown_coin.png" : COIN_SYMBOLS[Math.floor(Math.random() * COIN_SYMBOLS.length)];
+  });
+  const strip = document.createElement("div");
+  strip.className = "box-strip";
+  [...names, ...names].forEach(n => strip.appendChild(boxItemEl(n, isMid, h)));
+  cell.className = (isMid ? "collector-cell" : "bonus-cell") + " spinning";
+  cell.replaceChildren(strip);
+
+  let offset = -N * h, last = performance.now();
+  const speed = h * (fastMode ? 18 : 11);  // px per second
+  strip.style.transform = `translate3d(0,${offset}px,0)`;
+  const tick = now => {
+    if (bonusState !== b || !strip.isConnected) return;
+    const dt = Math.min(48, now - last); last = now;
+    offset += speed * dt / 1000;
+    if (offset >= 0) offset -= N * h;      // seamless loop
+    strip.style.transform = `translate3d(0,${offset}px,0)`;
+    b.raf[name + idx] = requestAnimationFrame(tick);
+  };
+  b.raf[name + idx] = requestAnimationFrame(tick);
+}
+
+/* Order: left top→bottom, mid (empty slots only), right top→bottom */
+function buildBonusQueue() {
+  const q = [];
+  BONUS_COLUMNS.forEach(name => bonusSpinCells(name).forEach(i => q.push([name, i])));
+  return q;
+}
+function runBonusQueue(k) {
+  const b = bonusState;
+  if (!b || b.finished || b.skipped) return;
+  if (k >= b.queue.length) { endBonusSpin(); return; }
+  const [name, idx] = b.queue[k];
+  const t = bonusTiming();
+  startBoxSpin(name, idx);
+  b.timer = setTimeout(() => {
+    if (bonusState !== b || b.skipped) return;
+    settleBonusCell(name, idx);            // land this box
+    b.timer = setTimeout(() => runBonusQueue(k + 1), t.gap);  // then the next
+  }, t.box);
+}
+
 /** Stop one box on its final result. `order` staggers boxes when a tap stops everything at once. */
 function settleBonusCell(name, idx, order = 0) {
   const b = bonusState;
   if (!b || b.settled[name][idx]) return;
   b.settled[name][idx] = true;
+  stopBoxRaf(name, idx);
   const col = bonusColumnEl(name);
   const cell = col.children[idx];
   if (!cell) return;
@@ -854,29 +920,11 @@ function beginCollectionSpin() {
   b.holding = false;
   renderCollectorBoard();                      // clean idle board: nothing spins yet
   b.animating = true;
-  bonusPage.style.setProperty("--reel-speed", fastMode ? "0.5s" : "0.72s");
   updateBonusUI();
   GameAudio.play("spin");
-  runBonusColumn(0);
-}
-
-/** Start one column, then stop its boxes one after another. */
-function runBonusColumn(ci) {
-  const b = bonusState;
-  if (!b || b.finished || b.skipped) return;
-  if (ci >= BONUS_COLUMNS.length) { endBonusSpin(); return; }
-  const name = BONUS_COLUMNS[ci];
-  const cells = bonusSpinCells(name);
-  if (!cells.length) { runBonusColumn(ci + 1); return; }   // e.g. all 3 collectors already exist
-  const t = bonusTiming();
-  cells.forEach(i => setBonusCellSpinning(name, i));
-  const stopAt = k => {
-    if (bonusState !== b || b.skipped) return;
-    settleBonusCell(name, cells[k]);
-    if (k + 1 < cells.length) b.timer = setTimeout(() => stopAt(k + 1), t.gap);
-    else b.timer = setTimeout(() => runBonusColumn(ci + 1), t.between);
-  };
-  b.timer = setTimeout(() => stopAt(0), t.spin);
+  b.raf = {};
+  b.queue = buildBonusQueue();
+  runBonusQueue(0);
 }
 
 /** Tap while spinning: stop every box now and show this spin's result. */
@@ -999,6 +1047,9 @@ function exitBonusToMain() {
   if (!bonusState) return;
   clearTimeout(bonusState.timer);
   clearTimeout(bonusState.autoReturnTimer);
+  Object.keys(bonusState.raf || {}).forEach(key => {
+    if (bonusState.raf[key]) cancelAnimationFrame(bonusState.raf[key]);
+  });
   const overlay = bonusPage.querySelector(".bonus-win-overlay");
   if (overlay) overlay.remove();
   if (bonusTotalWrap) bonusTotalWrap.style.display = "";
