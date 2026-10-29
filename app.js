@@ -780,8 +780,8 @@ function makeCollectionOutcome() {
  */
 const BONUS_COLUMNS = ["left", "mid", "right"];
 const bonusTiming = () => fastMode
-  ? { box: 300, gap: 100,  hold: 1000  }
-  : { box: 500, gap: 200, hold: 1500 };
+  ? { box: 500, gap: 200,  hold: 1500  }
+  : { box: 1000, gap: 400, hold: 2500 };
 
 function bonusColumnEl(name) {
   return name === "left" ? leftColumnEl : name === "right" ? rightColumnEl : midColumnEl;
