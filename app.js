@@ -21,8 +21,8 @@ const symbols = ["sevens.png", ...FRUIT_SYMBOLS, ...COIN_SYMBOLS];
    Only used when coins land on the 3x3 reels of the main game.
    Rule: the MIDDLE reel can only ever land the crown coin.            */
 const LANDING_MATH = {
-  bonusChance: 0.02,            // chance a spin lands 3 coins (bonus). Raised for easy testing.
-  singleCoinChance: 0.03,       // per-reel chance of one lone coin on a normal spin
+  bonusChance: 50,            // chance a spin lands 3 coins (bonus). Raised for easy testing.
+  singleCoinChance: 6,       // per-reel chance of one lone coin on a normal spin
   middleReel: 1,                // index of the middle reel
   middleReelCoin: "crown_coin.png"
 };
@@ -39,8 +39,8 @@ const LANDING_COIN_WEIGHTS = {
    ---------------------------------------------------------------------
    Completely separate from the landing math above.                    */
 const COLLECT_MATH = {
-  leftCoinChance: 0.09,         // per-box chance a coin lands in the LEFT column
-  rightCoinChance: 0.07,        // per-box chance a coin lands in the RIGHT column
+  leftCoinChance: 1,         // per-box chance a coin lands in the LEFT column
+  rightCoinChance: 0.9,        // per-box chance a coin lands in the RIGHT column
   newCollectorChance: 0.10,     // chance a new collector appears in a spin
   maxCollectors: 3
 };
