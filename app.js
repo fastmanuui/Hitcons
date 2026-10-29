@@ -780,8 +780,8 @@ function makeCollectionOutcome() {
  */
 const BONUS_COLUMNS = ["left", "mid", "right"];
 const bonusTiming = () => fastMode
-  ? { box: 200, gap: 60,  hold: 800  }
-  : { box: 400, gap: 100, hold: 1000 };
+  ? { box: 300, gap: 100,  hold: 1000  }
+  : { box: 500, gap: 200, hold: 1500 };
 
 function bonusColumnEl(name) {
   return name === "left" ? leftColumnEl : name === "right" ? rightColumnEl : midColumnEl;
@@ -803,8 +803,8 @@ function boxItemEl(name, isMid, h) {
   d.className = "box-item";
   d.style.height = h + "px";
   if (name) {
-    d.innerHTML = `<img src="assets/${name}" alt="" draggable="false">` +
-      (isMid ? "" : `<span class="strip-label">x${BONUS_COIN_VALUES[name] || 1}</span>`);
+    d.innerHTML = `<img src="assets/${name}" alt="" draggable="false">` 
+      ;
   }
   return d;
 }
