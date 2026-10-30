@@ -1642,8 +1642,9 @@ function connectHC2() {
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
     // If exactly two reels show a coin, hold the empty one for anticipation
-    const coinReels = [0,1,2].filter(r => session.finalSets[r].some(isCoin));
-    session.third = (coinReels.length === 2) ? [0,1,2].find(r => !coinReels.includes(r)) : -1;
+    const coinReels = [0, 1, 2].filter(r => session.finalSets[r].some(isCoin));
+    const missingIsRight = coinReels.length === 2 && !coinReels.includes(2);
+    session.third = missingIsRight ? 2 : -1;
     // Always land left → middle → right by column index (skip the held anticipation reel)
     const step = fastMode ? 180 : 480;
     [0,1,2].forEach(i => {
