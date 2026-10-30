@@ -1642,15 +1642,20 @@ function connectHC2() {
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
     // If exactly two reels show a coin, hold the empty one for anticipation
+    // Only anticipate on the RIGHT reel when left + middle already have coins
     const coinReels = [0, 1, 2].filter(r => session.finalSets[r].some(isCoin));
     const missingIsRight = coinReels.length === 2 && !coinReels.includes(2);
     session.third = missingIsRight ? 2 : -1;
-    // Always land left → middle → right by column index (skip the held anticipation reel)
+
+    // Always stop left → middle → right (never skip a column)
     const step = fastMode ? 180 : 480;
-    [0,1,2].forEach(i => {
-      if (i === session.third) return;
-      session.reelTimers[i] = setTimeout(() => landReel(session, i), step * (i + 1));
-    });
+    [0, 1, 2].forEach(i => {
+       // Right reel waits longer only when it is the anticipation reel
+       const delay = (i === session.third)
+          ? step * 3 + (fastMode ? 1200 : 2500)   // hold right a bit longer
+          : step * (i + 1);
+       session.reelTimers[i] = setTimeout(() => landReel(session, i), delay);
+   });
   });
 }
 connectHC2();
