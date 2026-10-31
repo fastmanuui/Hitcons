@@ -3,7 +3,7 @@
    ===================================================================== */
 
 /* ---------- Tunable settings ---------- */
-const ANTICIPATION_MS   = 10000; // Last reel spins for at most 10 seconds when 2 coins have landed
+const ANTICIPATION_MS   = 5000; // Last reel spins for at most 10 seconds when 2 coins have landed
 const BONUS_BREATH_MS   = 1900;  // pause (coins animate) before the "Congratulations" overlay
 const AUTO_SPIN_OPTIONS = [10, 15, 25, 50];
 const BONUS_SPIN_GAP_MS = 500;   // wait between one bonus spin and the next (0.5 s)
@@ -394,7 +394,7 @@ function buildReelStrip(names, cellH) {
   strip.className = "reel-strip";
   names.forEach(n => {
     const img = symbolImg(n);
-    img.style.cssText = `height:${cellH}px;min-height:${cellH}px;max-height:${cellH}px;flex:0 0 ${cellH}px;width:88%;object-fit:contain;`;
+    img.style.cssText = `height:${cellH}px;min-height:${cellH}px;max-height:${cellH}px;flex:0 0 ${cellH}px;width:96%;object-fit:contain;`;
     strip.appendChild(img);
   });
   return strip;
@@ -781,7 +781,7 @@ function makeCollectionOutcome() {
 const BONUS_COLUMNS = ["left", "mid", "right"];
 const bonusTiming = () => fastMode
   ? { box: 500, gap: 200,  hold: 800  }
-  : { box: 2000, gap: 400, hold: 1000 };
+  : { box: 1000, gap: 400, hold: 1000 };
 
 function bonusColumnEl(name) {
   return name === "left" ? leftColumnEl : name === "right" ? rightColumnEl : midColumnEl;
@@ -830,7 +830,7 @@ function startBoxSpin(name, idx) {
   cell.replaceChildren(strip);
 
   let offset = -N * h, last = performance.now();
-  const speed = h * (fastMode ? 18 : 11);  // px per second
+  const speed = h * (fastMode ? 16 : 6);  // px per second
   strip.style.transform = `translate3d(0,${offset}px,0)`;
   const tick = now => {
     if (bonusState !== b || !strip.isConnected) return;
