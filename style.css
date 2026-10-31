@@ -7,8 +7,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .reel{position:relative;min-width:0;min-height:0;overflow:hidden;border-right:3px solid #e9a92b;background:linear-gradient(90deg,#3b001f,#56002c 50%,#39001d)}
 .reel:last-child{border-right:0}
 .symbols{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));align-items:stretch;justify-items:center;gap:0;padding:1.5% 2%;overflow:hidden}
-.symbol{display:block;width:96%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:1px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
-.reel:nth-child(3) .symbol{width:96%}
+.symbol{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;padding:0px 0;filter:drop-shadow(0 4px 2px #12000a99);user-select:none;-webkit-user-drag:none}
+.reel:nth-child(3) .symbol{width:100%}
 /* Motion blur while symbols are moving. */
 .spinning-reel .symbol{filter:blur(1px)}
 .spinning-reel .symbols{will-change:filter,transform}
@@ -23,7 +23,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .box-strip{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;will-change:transform}
 .box-item{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%}
 .bonus-cell .box-item img,
-.collector-cell .box-item img{width:99%;height:96%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
+.collector-cell .box-item img{width:100%;height:100%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
 .box-item .strip-label{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-weight:900;
   font-size:clamp(8px,2.2vw,11px);color:#ffe27a;text-shadow:0 1px 2px #000;filter:blur(.6px)}
 
@@ -176,7 +176,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .pay-cell img{width:78%;height:34px;object-fit:contain}
 .pay-cell b{color:#ffdf61;font-size:clamp(12px,3.4vw,16px)}
 .mini-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:72%;margin:0 auto;padding:6px;border:1px solid #ffcf5266;border-radius:10px;background:#2a0016}
-.mini-grid img{width:100%;height:36px;object-fit:contain;border-radius:6px;opacity:.5}
+.mini-grid img{width:100%;height:56px;object-fit:contain;border-radius:6px;opacity:.5}
 .mini-grid img.win{opacity:1;background:#ffcf5233;box-shadow:inset 0 0 0 1px #ffcf52}
 
 /* ---------- Two coins landed: the last reel keeps spinning ---------- */
@@ -236,7 +236,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .collector-board{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;width:100%;padding:7px;border:1px solid #ffcf52;border-radius:14px;background:linear-gradient(135deg,#260013,#57002e);box-shadow:inset 0 0 12px #ffcf5222}
 .bonus-column{display:grid;grid-template-rows:repeat(3,minmax(66px,1fr));gap:7px;min-width:0}
 .bonus-cell,.collector-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:66px;overflow:hidden;border:1px solid #ffcf5266;border-radius:8px;background:linear-gradient(#a90058,#4c002b);color:#fff}
-.bonus-cell img,.collector-cell img{width:85%;height:36px;object-fit:contain;filter:drop-shadow(0 2px 2px #0008)}
+.bonus-cell img,.collector-cell img{width:99%;height:36px;object-fit:contain;filter:drop-shadow(0 2px 2px #0008)}
 .bonus-cell b,.collector-cell b{font-size:clamp(10px,2.8vw,14px);color:#ffdf61;text-shadow:0 1px #39001d}
 .bonus-cell.empty,.collector-cell.empty{background:#21001266;border-style:dashed;border-color:#ffcf5233}
 .collector-cell.active{background:linear-gradient(#ffdf61,#c47700);border-color:#fff0a6;box-shadow:inset 0 0 10px #fff8}
@@ -246,9 +246,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .collector-totals{display:flex;justify-content:center;flex-wrap:wrap;gap:5px}
 .collector-totals span{padding:4px 7px;border:1px solid #ffcf5266;border-radius:8px;background:#0003;color:#fff0a6;font-size:clamp(10px,2.7vw,13px)}
 .collector-totals b{color:#ffdf61}
-.bonus-cell.rolling{justify-content:flex-start;padding:0;background:linear-gradient(#210012,#a90058 45%,#210012);}
-.bonus-reel-strip{display:flex;flex-direction:column;align-items:center;width:100%;flex:0 0 auto;animation:bonusVerticalReel .42s linear infinite;will-change:transform;}
-.bonus-reel-strip img{display:block;flex:0 0 66px;width:78%;height:66px;object-fit:contain;filter:drop-shadow(0 2px 2px #0008);}
+
 @keyframes bonusVerticalReel{from{transform:translateY(-132px)}to{transform:translateY(0)}}
 @media(max-height:600px){.bonus-reel-strip img{flex-basis:38px;height:38px}}
 .collector-marker{color:#ffdf61;font-weight:900;font-size:clamp(9px,2.5vw,12px);text-shadow:0 1px #39001d}
@@ -1054,7 +1052,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   animation: none !important;
 }
 .reel-strip .symbol {
-  width: 96%;
+  width: 100%;
   object-fit: contain;
   padding: 0;
   box-sizing: border-box;
@@ -1216,7 +1214,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   width: min(96%, 430px);
   max-width: 430px;
   aspect-ratio: .96;
-  padding: 2.5%;
+  padding: 1.5%;
   border-width: 3px;
   border-radius: 14px;
   box-shadow: inset 0 0 0 1px #fff2a0, inset 0 0 28px #ffb62d44, 0 8px 24px #000c, 0 0 22px #ffcf4a33;
@@ -1229,8 +1227,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 .bonus-cell.has-coin > img,
 .collector-cell.active > img {
-  width: 92%;
-  height: 92%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px #0009) drop-shadow(0 0 7px #ffd24a55);
 }
