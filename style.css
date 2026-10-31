@@ -23,7 +23,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .box-strip{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;will-change:transform}
 .box-item{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%}
 .bonus-cell .box-item img,
-.collector-cell .box-item img{width:93%;height:93%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
+.collector-cell .box-item img{width:99%;height:96%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
 .box-item .strip-label{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-weight:900;
   font-size:clamp(8px,2.2vw,11px);color:#ffe27a;text-shadow:0 1px 2px #000;filter:blur(.6px)}
 
@@ -215,7 +215,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 
 /* congratulation overlay coins */
 .bonus-coins{display:flex;justify-content:center;align-items:center;gap:3%}
-.bonus-coin-img{width:30%;height:auto;filter:drop-shadow(0 0 12px #ffd24a);animation:coinBounce 1.1s ease-in-out infinite}
+.bonus-coin-img{width:50%;height:auto;filter:drop-shadow(0 0 12px #ffd24a);animation:coinBounce 1.1s ease-in-out infinite}
 @keyframes coinBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.08)}}
 
 /* Animated payline overlay and emphasized big wins */
