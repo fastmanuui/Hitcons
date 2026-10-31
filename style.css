@@ -1042,7 +1042,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 120%;
+  width: 110%;
   will-change: transform;
   animation: none !important;
   transform: translate3d(0, 0, 0);
@@ -1052,7 +1052,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   animation: none !important;
 }
 .reel-strip .symbol {
-  width: 120%;
+  width: 110%;
   object-fit: contain;
   padding: 0;
   box-sizing: border-box;
@@ -1227,8 +1227,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 .bonus-cell.has-coin > img,
 .collector-cell.active > img {
-  width: 120%;
-  height: 120%;
+  width: 110%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px #0009) drop-shadow(0 0 7px #ffd24a55);
 }
