@@ -830,7 +830,7 @@ function startBoxSpin(name, idx) {
   cell.replaceChildren(strip);
 
   let offset = -N * h, last = performance.now();
-  const speed = h * (fastMode ? 16 : 5);  // px per second
+  const speed = h * (fastMode ? 10 : 5);  // px per second
   strip.style.transform = `translate3d(0,${offset}px,0)`;
   const tick = now => {
     if (bonusState !== b || !strip.isConnected) return;
