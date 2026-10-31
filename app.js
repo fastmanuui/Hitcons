@@ -394,7 +394,7 @@ function buildReelStrip(names, cellH) {
   strip.className = "reel-strip";
   names.forEach(n => {
     const img = symbolImg(n);
-    img.style.cssText = `height:${cellH}px;min-height:${cellH}px;max-height:${cellH}px;flex:0 0 ${cellH}px;width:120%;object-fit:contain;`;
+    img.style.cssText = `height:${cellH}px;min-height:${cellH}px;max-height:${cellH}px;flex:0 0 ${cellH}px;width:110%;object-fit:contain;`;
     strip.appendChild(img);
   });
   return strip;
