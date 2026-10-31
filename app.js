@@ -430,7 +430,7 @@ function startReelStripSpin(reel, reelIndex, session) {
   reel.classList.add("spinning-reel");
 
   // Pixels per second — clearly visible vertical scroll
-  let speed = fastMode ? 900 : 500;
+  let speed = fastMode ? 1200 : 900;
   if (session.anticipating && reelIndex === session.third) speed = 1700;
   let offset = -REEL_STRIP_LEN * cellH;
   let last = performance.now();
