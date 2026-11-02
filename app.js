@@ -3,7 +3,7 @@
    ===================================================================== */
 
 /* ---------- Tunable settings ---------- */
-const ANTICIPATION_MS   = 5000; // Last reel spins for at most 10 seconds when 2 coins have landed
+const ANTICIPATION_MS   = 5000; // Full anticipation window after the first two reels land
 const BONUS_BREATH_MS   = 1900;  // pause (coins animate) before the "Congratulations" overlay
 const AUTO_SPIN_OPTIONS = [10, 15, 25, 50];
 const BONUS_SPIN_GAP_MS = 500;   // wait between one bonus spin and the next (0.5 s)
@@ -576,6 +576,7 @@ const rightColumnEl    = document.getElementById("rightColumn");
 const respinsEl        = document.getElementById("respinsCount");
 const bonusTotalEl     = document.getElementById("bonusTotal");
 const bonusSpinBtn     = document.getElementById("bonusSpinBtn");
+const bonusFastBtn     = document.getElementById("bonusFastBtn");
 const bonusCollectBtn  = document.getElementById("bonusCollectBtn");
 const bonusTotalWrap   = bonusTotalEl ? bonusTotalEl.closest(".bonus-total") : null;
 
@@ -741,6 +742,11 @@ function updateBonusUI() {
   if (!bonusState) return;
   const b = bonusState;
   respinsEl.textContent = b.respins;
+  if (bonusFastBtn) {
+    bonusFastBtn.classList.toggle("active", fastMode);
+    bonusFastBtn.textContent = fastMode ? "FAST ON" : "NORMAL";
+    bonusFastBtn.setAttribute("aria-pressed", fastMode ? "true" : "false");
+  }
   b.total = b.collectors.reduce((s, v) => s + v, 0);
   // Always show and update the running total
   if (bonusTotalEl) bonusTotalEl.textContent = b.total;
@@ -1077,6 +1083,19 @@ function finishCoinCollection() {
   }
 }
 
+// Bonus speed toggle shares the existing normal/fast timing mode.
+// It changes the pace of upcoming bonus boxes without resetting the current result.
+if (bonusFastBtn) bonusFastBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  fastMode = !fastMode;
+  fastBtn.classList.toggle("active", fastMode);
+  bonusFastBtn.classList.toggle("active", fastMode);
+  bonusFastBtn.textContent = fastMode ? "FAST ON" : "NORMAL";
+  bonusFastBtn.setAttribute("aria-pressed", fastMode ? "true" : "false");
+  showToast(fastMode ? "Fast spin ON" : "Normal spin ON");
+});
+
 // STOP button must work while spinning
 bonusSpinBtn.addEventListener("click", (e) => {
   e.preventDefault();
@@ -1403,10 +1422,8 @@ function landReel(session, i) {
     maybeStartAnticipation(session);
   }
 }
-// Left + middle already show a coin → keep the right reel spinning with suspense
-// (happens whether the final result is 2 or 3 coins).
+// Two coins are on the board and one reel is left: keep it spinning with suspense.
 function maybeStartAnticipation(session) {
-
   if (session.third < 0 || session.anticipating || session.landed[session.third]) return;
   const others = [0, 1, 2].filter(i => i !== session.third);
   if (!others.every(i => session.landed[i])) return;
@@ -1414,6 +1431,10 @@ function maybeStartAnticipation(session) {
   session.anticipating = true;
   game.classList.add("anticipating");
   reels[session.third].classList.add("anticipate-reel");
+  // Cancel the initial stop timer and give every qualifying outcome the same
+  // full anticipation window, including when the server result has 3 coins.
+  if (session.reelTimers[session.third]) clearTimeout(session.reelTimers[session.third]);
+  session.reelTimers[session.third] = setTimeout(() => landReel(session, session.third), ANTICIPATION_MS);
   // Rebuild the held reel with a VERY fast spin + coin teases
   startReelStripSpin(reels[session.third], session.third, session);
   markCoins(session, "coin-wait");
@@ -1423,7 +1444,6 @@ function maybeStartAnticipation(session) {
 
   banner.textContent = "ONE MORE COIN!";
   banner.classList.add("show", "suspense");
-  session.timers.push(setTimeout(() => landReel(session, session.third), ANTICIPATION_MS));
 }
 
 /* Anticipation suspense: rising tick sound + gold spark on the held column (bottom row) */
@@ -1648,21 +1668,21 @@ function connectHC2() {
     const session=activeSpin; pendingRequestId=null;
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
-    // Anticipation: long/fast spin on the RIGHT reel whenever LEFT + MIDDLE
-    // already show a coin — regardless of whether the right reel will also
-    // land a coin. This prevents players from reading “long spin = no 3rd coin”.
-    // If the first (left) column has no coin, skip the long spin.
-    const leftHasCoin = session.finalSets[0].some(isCoin);
-    const midHasCoin  = session.finalSets[1].some(isCoin);
-    session.third = (leftHasCoin && midHasCoin) ? 2 : -1;
+    // Anticipation depends on the FIRST reel, not whether the final result
+    // contains exactly two coins. If reel 1 has a coin and the spin has two
+    // or three coin-bearing reels, keep the right reel spinning for suspense.
+    // Two coins only in reels 2 + 3 do not trigger the extended anticipation.
+    const coinReels = [0, 1, 2].filter(r => session.finalSets[r].some(isCoin));
+    const firstReelHasCoin = coinReels.includes(0);
+    session.third = firstReelHasCoin && coinReels.length >= 2 ? 2 : -1;
 
-
-    // Always stop left → middle → right (never skip a column)
+    // Always stop left → middle → right (never skip a column). The right reel
+    // gets an initial delay; when the other reels land, anticipation resets
+    // its timer so the full suspense window is independent of the server result.
     const step = fastMode ? 180 : 480;
     [0, 1, 2].forEach(i => {
-       // Right reel waits longer only when it is the anticipation reel
        const delay = (i === session.third)
-          ? step * 3 + (fastMode ? 1200 : 2500)   // hold right a bit longer
+          ? step * 3 + (fastMode ? 1200 : 2500)
           : step * (i + 1);
        session.reelTimers[i] = setTimeout(() => landReel(session, i), delay);
    });
@@ -1738,29 +1758,22 @@ spinBtn.addEventListener("click", () => {
   }
   spin();
 });
-/* Shared Fast toggle — keeps main-game and bonus Fast buttons in sync */
-const bonusFastBtn = document.getElementById("bonusFastBtn");
-function setFastMode(on) {
-  fastMode = Boolean(on);
+fastBtn.addEventListener("click", () => {
+  fastMode = !fastMode;
   fastBtn.classList.toggle("active", fastMode);
   if (bonusFastBtn) {
     bonusFastBtn.classList.toggle("active", fastMode);
-    bonusFastBtn.setAttribute("aria-pressed", String(fastMode));
+    bonusFastBtn.textContent = fastMode ? "FAST ON" : "NORMAL";
+    bonusFastBtn.setAttribute("aria-pressed", fastMode ? "true" : "false");
   }
-  showToast(fastMode ? "Fast spin ON" : "Fast spin OFF");
-}
-fastBtn.addEventListener("click", () => setFastMode(!fastMode));
-if (bonusFastBtn) {
-  bonusFastBtn.addEventListener("click", () => setFastMode(!fastMode));
-}
-
+  showToast(fastMode ? "Fast spin ON" : "Normal spin ON");
+});
 autoBtn.addEventListener("click", () => {
   if (auto) stopAuto("Auto spin stopped");
   else openAutoSelector();
 });
 document.getElementById("menu").addEventListener("click", openSettings);
 betBtn.addEventListener("click", openBetSelector);
-
 
 /* ---------- Idle atmosphere (subtle motion while waiting) ---------- */
 function startIdleFx() {
