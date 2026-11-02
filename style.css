@@ -656,23 +656,41 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 /* Keep toast above bonus page */
 .game.bonus-active .toast { z-index: 30; }
 
-/* Coin value label on landed coins */
+/* Coin value label — large coin + label centered on the face (matches reference photo) */
 .bonus-cell.has-coin {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bonus-cell.has-coin > img {
+  width: 118%;
+  height: 118%;
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px #000a) drop-shadow(0 0 10px #ffd24a66);
 }
 .bonus-cell .coin-label {
   position: absolute;
-  bottom: 6%;
-  left: 0;
-  right: 0;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
   text-align: center;
-  font-weight: 900;
-  font-size: clamp(11px, 3.2vw, 16px);
-  color: #ffe27a;
-  text-shadow: 0 1px 2px #000, 0 0 8px #ffb62d, 0 0 2px #000;
+  font-weight: 1000;
+  font-size: clamp(13px, 3.8vw, 19px);
+  color: #fff8d0;
+  text-shadow: 0 1px 0 #5a002e, 0 2px 4px #000, 0 0 10px #ffb62d;
   pointer-events: none;
   line-height: 1;
+  letter-spacing: -0.02em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5a1a6eaa, #2a0a40cc);
+  border: 1px solid #ffe27a88;
+  box-shadow: 0 2px 6px #0009;
 }
+
 
 /* Random spin strip: coins + empty slots mixed */
 .bonus-cell.spinning .cell-strip {
@@ -920,30 +938,43 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
     0 6px 20px #000a;
 }
 
-/* Make collectors visually distinct from the coins they collect */
+/* Collectors: gold frame + large crown coin with value centered on the coin (photo match) */
 .collector-cell.active {
   background: linear-gradient(180deg, #ffe27a 0%, #e0a000 55%, #b06a00 100%) !important;
   border: 2px solid #fff8d0 !important;
   box-shadow: inset 0 0 12px #fff6, 0 0 14px #ffd24a66 !important;
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.collector-cell.active > img {
+  width: 118% !important;
+  height: 118% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 4px #0008) !important;
+  opacity: 0.95 !important;
 }
 .collector-cell.active .collector-value,
 .collector-cell.active b {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
   color: #2a0a40 !important;
-  text-shadow: none !important;
-  font-size: clamp(15px, 4cqw, 22px) !important;
-  font-weight: 900;
-}
-.collector-cell.active img {
-  /* Tint / reduce the plain coin so it reads as a "collector" not a prize coin */
-  filter: brightness(0.85) sepia(0.4) hue-rotate(-10deg) drop-shadow(0 1px 2px #0006);
-  height: 42% !important;
-  opacity: 0.9;
+  text-shadow: 0 1px 0 #fff8 !important;
+  font-size: clamp(15px, 4.2cqw, 22px) !important;
+  font-weight: 1000 !important;
+  line-height: 1;
+  pointer-events: none;
 }
 .collector-cell .collector-placeholder {
   color: #c9a227cc !important;
   font-size: clamp(9px, 2.4cqw, 12px) !important;
   letter-spacing: 0.04em;
 }
+
 
 /* Respins badge – clearer and higher contrast */
 .respins-badge {
@@ -1225,25 +1256,41 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   border-radius: 10px;
   box-shadow: inset 0 0 0 1px #ffffff12, 0 3px 8px #0008;
 }
-.bonus-cell.has-coin > img,
-.collector-cell.active > img {
-  width: 110%;
-  height: 100%;
+/* Large coins that fill the cell; label / value sit on the coin itself */
+.bonus-cell.has-coin > img {
+  width: 120%;
+  height: 120%;
   object-fit: contain;
-  filter: drop-shadow(0 3px 4px #0009) drop-shadow(0 0 7px #ffd24a55);
+  filter: drop-shadow(0 3px 5px #000a) drop-shadow(0 0 10px #ffd24a66);
 }
-.bonus-cell .coin-label {
-  font-size: clamp(11px, 3vw, 15px);
-  padding: 1px 1px;
-  border: 1px solid #ffe27a99;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #57205e, #270c3c);
-  box-shadow: 0 2px 5px #0008;
+.collector-cell.active {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.collector-cell.active > img {
+  width: 118%;
+  height: 118%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px #0009) drop-shadow(0 0 8px #ffd24a55);
+  /* keep crown readable as a collector, not a prize coin */
+  opacity: 0.95;
 }
 .collector-cell.active .collector-value {
-  font-size: clamp(16px, 4.4vw, 23px);
-  text-shadow: 0 1px 0 #fff5;
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: clamp(15px, 4.2vw, 22px);
+  font-weight: 1000;
+  color: #2a0a40;
+  text-shadow: 0 1px 0 #fff8, 0 0 6px #ffe27a88;
+  line-height: 1;
+  pointer-events: none;
 }
+
 .bonus-win-overlay {
   padding: 18px;
   background: radial-gradient(ellipse at center, #270c3be8 0%, #09030df2 72%);
@@ -1346,3 +1393,135 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   .bonus-result-card .win-mult { font-size: clamp(34px, 9vw, 48px); }
   .bonus-result-card .win-amount { margin-bottom: 12px; }
 }
+/* =====================================================================
+   Production polish — controls, status bar, empty collector crowns
+   ===================================================================== */
+
+/* Status bar: chip-style balance / bet that matches the reference UI */
+.status {
+  height: 5%;
+  top: 88.2%;
+  padding: 0 2.5%;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(40,0,30,.92), rgba(12,0,12,.95));
+  border: 1.5px solid #ffcf5288;
+  box-shadow: 0 4px 14px #000a, inset 0 1px 0 #ffffff22;
+  font-size: clamp(12px, 3.2cqw, 18px);
+}
+.balance, .bet-value {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3a0a28, #1a0612);
+  border: 1px solid #ffcf5244;
+  box-shadow: inset 0 1px 3px #0008;
+}
+.balance b, .bet-value b {
+  font-size: 1.15em;
+  color: #ffe27a;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px #000;
+}
+.balance span, .bet-value span {
+  opacity: 0.85;
+  font-size: 0.85em;
+  color: #ffd0e6;
+}
+/* Level badge more premium */
+.level {
+  bottom: 118%;
+  font-size: clamp(20px, 5cqw, 36px);
+  filter: drop-shadow(0 0 8px #ffd24a55);
+}
+
+/* Control buttons: tighter, more premium depth */
+.ctl {
+  box-shadow:
+    0 3px 0 #56002f,
+    0 6px 12px #000a,
+    0 0 12px #ff2fa044,
+    inset 0 -5px 8px #5a003055,
+    inset 0 2px 2px #ffffff77;
+}
+.ctl.active {
+  box-shadow:
+    0 3px 0 #1c0036,
+    0 6px 12px #000a,
+    0 0 18px #ffd24a99,
+    inset 0 -5px 8px #1c003688,
+    inset 0 2px 2px #ffffff77;
+}
+.spin {
+  box-shadow:
+    0 0 0 3px #e85ca9,
+    0 0 20px #ff4cba,
+    0 6px 0 #5a002e,
+    inset 0 -8px 12px #4a002866 !important;
+}
+
+/* Empty collector / coin slots — soft crown silhouette like the photo */
+.bonus-cell.empty,
+.collector-cell.empty {
+  background: linear-gradient(180deg, #3a0a28aa, #1a061288) !important;
+  border: 1.5px dashed #ffcf5244 !important;
+  position: relative;
+}
+.bonus-cell.empty::after,
+.collector-cell.empty::after {
+  content: "♛";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(28px, 8cqw, 42px);
+  color: #ff9acb;
+  opacity: 0.28;
+  text-shadow: none;
+  pointer-events: none;
+}
+.collector-cell.empty .collector-placeholder {
+  display: none; /* crown is enough */
+}
+
+/* Ensure has-coin cells never show the empty crown */
+.bonus-cell.has-coin::after,
+.collector-cell.active::after {
+  display: none !important;
+}
+
+/* Startup full styles (redundant with critical but keeps one source of truth when CSS loads) */
+.startup-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(40px); opacity: .55; }
+.startup-orb-one { width: min(70vw,320px); height: min(70vw,320px); top: -8%; left: -12%; background: radial-gradient(circle,#ff4f9a88,#ff4f9a00 70%); }
+.startup-orb-two { width: min(55vw,260px); height: min(55vw,260px); bottom: 5%; right: -10%; background: radial-gradient(circle,#ffd24a66,#ffd24a00 70%); }
+.startup-emblem { position: relative; width: 110px; height: 110px; margin: 0 auto 14px; display: grid; place-items: center; }
+.startup-crown { font-size: 64px; line-height: 1; color: #ffd24a; filter: drop-shadow(0 0 18px #ffd24a88) drop-shadow(0 4px 0 #5a002e); animation: startupCrown 2.8s ease-in-out infinite; }
+.startup-coin { position: absolute; font-size: 22px; color: #ffe27a; text-shadow: 0 0 10px #ffd24a; }
+.startup-coin-a { top: 8px; right: 6px; animation: startupCoin 2.2s ease-in-out infinite; }
+.startup-coin-b { bottom: 10px; left: 4px; animation: startupCoin 2.2s ease-in-out infinite .6s; }
+.startup-eyebrow { font-size: 11px; font-weight: 900; letter-spacing: .28em; color: #ffb3d4; margin-bottom: 6px; text-transform: uppercase; }
+.startup-content h1 { margin: 0 0 6px; font-size: clamp(34px,9vw,48px); font-weight: 1000; letter-spacing: .04em; color: #fff; text-shadow: 0 3px 0 #7a0038,0 0 24px #ff2b9788; }
+.startup-content h1 span { color: #ffd24a; text-shadow: 0 3px 0 #7a0038,0 0 20px #ffd24a99; }
+.startup-tagline { margin: 0 0 22px; font-size: 14px; color: #ffd0e6; opacity: .9; }
+.startup-progress-track { height: 10px; border-radius: 99px; background: #1a0612; border: 1px solid #ffcf5255; overflow: hidden; box-shadow: inset 0 1px 4px #000a; }
+.startup-progress-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg,#ff9acb,#ffd24a 55%,#ffe27a); box-shadow: 0 0 12px #ffd24a88; transition: width .35s ease; }
+.startup-progress-meta { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 18px; font-size: 12px; color: #ffd0e6; }
+.startup-progress-meta strong { color: #ffd24a; font-variant-numeric: tabular-nums; }
+.startup-checks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: left; }
+.startup-check { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid #ffcf5244; background: rgba(0,0,0,.28); backdrop-filter: blur(6px); }
+.startup-check-icon { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; background: #3a0a20; color: #ffb3d4; flex: none; }
+.startup-check.is-ready .startup-check-icon { background: linear-gradient(#17b86a,#087a43); color: #fff; }
+.startup-check.is-error .startup-check-icon { background: linear-gradient(#e04040,#8a1010); color: #fff; }
+.startup-check b { display: block; font-size: 13px; color: #fff; }
+.startup-check small { display: block; font-size: 11px; color: #ffd0e6; opacity: .85; margin-top: 2px; }
+.startup-check em { margin-left: auto; font-style: normal; font-size: 10px; font-weight: 900; letter-spacing: .06em; color: #ffb3d4; }
+.startup-check.is-ready em { color: #7dffb3; }
+.startup-check.is-error em { color: #ff9a9a; }
+.startup-footer { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #ffb3d4; opacity: .9; }
+.startup-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ffd24a; margin-right: 8px; box-shadow: 0 0 10px #ffd24a; animation: startupPulse 1.4s ease-in-out infinite; }
+.startup-retry { margin-top: 16px; min-height: 44px; padding: 0 22px; border-radius: 12px; border: 2px solid #ffd24a; background: linear-gradient(180deg,#ff63bb,#8a0054); color: #fff; font-weight: 900; font-size: 14px; cursor: pointer; }
+.startup-screen.is-leaving { opacity: 0; transform: scale(1.03); transition: opacity .55s ease, transform .55s ease; pointer-events: none; }
+@keyframes startupCrown { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes startupCoin { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.15); opacity: 1; } }
+@keyframes startupPulse { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
