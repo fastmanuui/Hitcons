@@ -689,6 +689,8 @@ function randomCollectorStrip() {
   return items.join("");
 }
 
+/** Temporary coin cell (left / right columns).
+ *  Landed coins are large and show the multiplier centered on the coin face. */
 function coinCellHtml(cell, spinning) {
   if (spinning) {
     return `<div class="bonus-cell spinning"><div class="cell-strip">${randomSpinStrip()}</div></div>`;
@@ -700,6 +702,8 @@ function coinCellHtml(cell, spinning) {
   </div>`;
 }
 
+/** Middle-column collector cell.
+ *  Active collectors use a large crown coin with the running total centered on it. */
 function collectorCellHtml(value, spinning, isNew) {
   if (spinning) {
     return `<div class="collector-cell spinning"><div class="cell-strip">${randomCollectorStrip()}</div></div>`;
@@ -708,12 +712,13 @@ function collectorCellHtml(value, spinning, isNew) {
     return `<div class="collector-cell empty"><span class="collector-placeholder">COLLECTOR</span></div>`;
   }
   const cls = isNew ? "collector-cell active new-flash" : "collector-cell active";
-  // Use crown coin so collectors read differently from the numbered prize coins
+  // Crown coin + overlaid value so collectors read differently from prize coins
   return `<div class="${cls}">
     <img src="assets/crown_coin.png" alt="collector">
     <b class="collector-value">${value}</b>
   </div>`;
 }
+
 
 function renderCollectorBoard(opts = {}) {
   if (!bonusState) return;
