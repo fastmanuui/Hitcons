@@ -1403,8 +1403,10 @@ function landReel(session, i) {
     maybeStartAnticipation(session);
   }
 }
-// Two coins are on the board and one reel is left: keep it spinning with suspense.
+// Left + middle already show a coin → keep the right reel spinning with suspense
+// (happens whether the final result is 2 or 3 coins).
 function maybeStartAnticipation(session) {
+
   if (session.third < 0 || session.anticipating || session.landed[session.third]) return;
   const others = [0, 1, 2].filter(i => i !== session.third);
   if (!others.every(i => session.landed[i])) return;
@@ -1646,11 +1648,14 @@ function connectHC2() {
     const session=activeSpin; pendingRequestId=null;
     session.serverResult=message; session.finalGrid=message.grid;
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
-    // If exactly two reels show a coin, hold the empty one for anticipation
-    // Only anticipate on the RIGHT reel when left + middle already have coins
-    const coinReels = [0, 1, 2].filter(r => session.finalSets[r].some(isCoin));
-    const missingIsRight = coinReels.length === 2 && !coinReels.includes(2);
-    session.third = missingIsRight ? 2 : -1;
+    // Anticipation: long/fast spin on the RIGHT reel whenever LEFT + MIDDLE
+    // already show a coin — regardless of whether the right reel will also
+    // land a coin. This prevents players from reading “long spin = no 3rd coin”.
+    // If the first (left) column has no coin, skip the long spin.
+    const leftHasCoin = session.finalSets[0].some(isCoin);
+    const midHasCoin  = session.finalSets[1].some(isCoin);
+    session.third = (leftHasCoin && midHasCoin) ? 2 : -1;
+
 
     // Always stop left → middle → right (never skip a column)
     const step = fastMode ? 180 : 480;
@@ -1733,17 +1738,29 @@ spinBtn.addEventListener("click", () => {
   }
   spin();
 });
-fastBtn.addEventListener("click", () => {
-  fastMode = !fastMode;
+/* Shared Fast toggle — keeps main-game and bonus Fast buttons in sync */
+const bonusFastBtn = document.getElementById("bonusFastBtn");
+function setFastMode(on) {
+  fastMode = Boolean(on);
   fastBtn.classList.toggle("active", fastMode);
+  if (bonusFastBtn) {
+    bonusFastBtn.classList.toggle("active", fastMode);
+    bonusFastBtn.setAttribute("aria-pressed", String(fastMode));
+  }
   showToast(fastMode ? "Fast spin ON" : "Fast spin OFF");
-});
+}
+fastBtn.addEventListener("click", () => setFastMode(!fastMode));
+if (bonusFastBtn) {
+  bonusFastBtn.addEventListener("click", () => setFastMode(!fastMode));
+}
+
 autoBtn.addEventListener("click", () => {
   if (auto) stopAuto("Auto spin stopped");
   else openAutoSelector();
 });
 document.getElementById("menu").addEventListener("click", openSettings);
 betBtn.addEventListener("click", openBetSelector);
+
 
 /* ---------- Idle atmosphere (subtle motion while waiting) ---------- */
 function startIdleFx() {
