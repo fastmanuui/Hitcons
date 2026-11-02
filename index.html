@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Hit Coins 2 — UI Prototype</title>
-<link rel="stylesheet" href="style.css?v=hc2-ui-improvements-2">
+<link rel="stylesheet" href="style.css?v=hc2-ui-improvements-3">
+
 
 <!-- Critical splash layout is inline so it still works if a host/browser serves an older cached stylesheet. -->
 <style id="critical-startup-layout">
@@ -193,10 +194,16 @@ body.game-ready .game{visibility:visible!important}
       <div class="respins-badge"><span class="respins-icon">⟳</span> <b id="respinsCount">3</b> RE-SPINS</div>
     </div>
     <div class="bonus-controls">
+      <!-- Fast toggle (shares the same fastMode state as the main game) -->
+      <button type="button" class="bonus-fast-btn" id="bonusFastBtn" aria-label="Fast spin" aria-pressed="false">
+        <span class="bonus-fast-chevs">››</span>
+        <em>FAST</em>
+      </button>
       <button type="button" class="bonus-spin-btn" id="bonusSpinBtn" aria-label="Spin bonus">
         <span class="bonus-spin-icon">⟳</span>
       </button>
     </div>
+
     <div class="bonus-footer">
       <span class="bonus-total">TOTAL <b id="bonusTotal">0</b></span>
       <button type="button" class="bonus-collect" id="bonusCollectBtn" hidden>COLLECT</button>
@@ -207,4 +214,4 @@ body.game-ready .game{visibility:visible!important}
 <script>window.HC2_SOCKET_URL = "https://keno-server-20g6.onrender.com";</script>
 <script src="app.js"></script>
 </body>
-            </html>
+</html>
