@@ -1527,256 +1527,111 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 @keyframes startupPulse { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
 
 /* =====================================================================
-   FINAL OVERRIDES — coins on face, modern controls/status, bonus Fast
-   These rules intentionally sit at the end of the cascade so they win.
+   Final production pass: bonus speed toggle, coin sizing, and status chips
    ===================================================================== */
-
-/* --- Large coins + label/value centered ON the coin face --- */
-.bonus-cell.has-coin {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden;
-}
-.bonus-cell.has-coin > img {
-  width: 125% !important;
-  height: 125% !important;
-  max-width: none !important;
-  object-fit: contain !important;
-  filter: drop-shadow(0 3px 6px #000b) drop-shadow(0 0 12px #ffd24a77) !important;
-}
-.bonus-cell .coin-label {
-  position: absolute !important;
-  left: 50% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 3 !important;
-  bottom: auto !important;
-  right: auto !important;
-  margin: 0 !important;
-  font-weight: 1000 !important;
-  font-size: clamp(14px, 4vw, 20px) !important;
-  color: #fff8d0 !important;
-  text-shadow: 0 1px 0 #5a002e, 0 2px 5px #000, 0 0 12px #ffb62d !important;
-  padding: 3px 8px !important;
-  border-radius: 999px !important;
-  background: linear-gradient(180deg, #5a1a6ecc, #2a0a40ee) !important;
-  border: 1.5px solid #ffe27aaa !important;
-  box-shadow: 0 2px 8px #000a !important;
-  line-height: 1 !important;
-  pointer-events: none !important;
-  letter-spacing: -0.02em;
-}
-
-/* Collectors: large crown + value sitting on the coin */
-.collector-cell.active {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: linear-gradient(180deg, #ffe27a 0%, #e0a000 55%, #b06a00 100%) !important;
-  border: 2px solid #fff8d0 !important;
-  box-shadow: inset 0 0 14px #fff8, 0 0 16px #ffd24a77 !important;
-}
-.collector-cell.active > img {
-  width: 125% !important;
-  height: 125% !important;
-  max-width: none !important;
-  object-fit: contain !important;
-  filter: drop-shadow(0 2px 5px #0009) !important;
-  opacity: 0.96 !important;
-}
-.collector-cell.active .collector-value,
-.collector-cell.active > b {
-  position: absolute !important;
-  left: 50% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 3 !important;
-  font-size: clamp(16px, 4.6vw, 24px) !important;
-  font-weight: 1000 !important;
-  color: #2a0a40 !important;
-  text-shadow: 0 1px 0 #fff9, 0 0 8px #ffe27a99 !important;
-  line-height: 1 !important;
-  pointer-events: none !important;
-  background: none !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
-/* Empty slots: soft crown silhouette */
-.bonus-cell.empty,
-.collector-cell.empty {
-  background: linear-gradient(180deg, #3a0a28bb, #1a061299) !important;
-  border: 1.5px dashed #ffcf5244 !important;
-}
-.bonus-cell.empty::after,
-.collector-cell.empty::after {
-  content: "♛";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: clamp(30px, 9cqw, 46px);
-  color: #ff9acb;
-  opacity: 0.25;
-  pointer-events: none;
-}
-.bonus-cell.has-coin::after,
-.collector-cell.active::after {
-  display: none !important;
-}
-.collector-cell.empty .collector-placeholder {
-  display: none !important;
-}
-
-/* --- Main status bar: modern chip style --- */
-.status {
-  height: 5.2% !important;
-  top: 88% !important;
-  padding: 0 2.2% !important;
-  border-radius: 16px !important;
-  background: linear-gradient(180deg, rgba(48,0,36,.94), rgba(14,0,14,.97)) !important;
-  border: 1.5px solid #ffcf5299 !important;
-  box-shadow: 0 5px 18px #000c, inset 0 1px 0 #ffffff28 !important;
-  font-size: clamp(12px, 3.1cqw, 17px) !important;
-  gap: 8px !important;
-}
-.balance, .bet-value {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 5px 12px !important;
-  border-radius: 999px !important;
-  background: linear-gradient(180deg, #4a0a32, #1e0818) !important;
-  border: 1px solid #ffcf5266 !important;
-  box-shadow: inset 0 1px 4px #0009, 0 1px 0 #ffffff15 !important;
-}
-.balance b, .bet-value b {
-  font-size: 1.2em !important;
-  color: #ffe27a !important;
-  font-variant-numeric: tabular-nums !important;
-  text-shadow: 0 1px 3px #000 !important;
-  letter-spacing: 0.01em;
-}
-.balance span, .bet-value span {
-  opacity: 0.9 !important;
-  font-size: 0.88em !important;
-  color: #ffd0e6 !important;
-}
-.level {
-  bottom: 120% !important;
-  font-size: clamp(22px, 5.2cqw, 38px) !important;
-  filter: drop-shadow(0 0 10px #ffd24a66);
-}
-
-/* --- Control buttons: richer depth & gloss --- */
-.ctl {
-  box-shadow:
-    0 4px 0 #56002f,
-    0 8px 16px #000b,
-    0 0 14px #ff2fa055,
-    inset 0 -6px 10px #5a003066,
-    inset 0 2px 3px #ffffff99 !important;
-}
-.ctl::before {
-  height: 42% !important;
-  background: linear-gradient(180deg, #ffffffcc, #ffffff00) !important;
-}
-.ctl.active {
-  box-shadow:
-    0 4px 0 #1c0036,
-    0 8px 16px #000b,
-    0 0 22px #ffd24aaa,
-    inset 0 -6px 10px #1c003699,
-    inset 0 2px 3px #ffffff99 !important;
-}
-.spin {
-  box-shadow:
-    0 0 0 3px #e85ca9,
-    0 0 22px #ff4cba,
-    0 7px 0 #5a002e,
-    inset 0 -10px 14px #4a002877,
-    inset 0 3px 6px #ffffff55 !important;
-}
-
-/* --- Bonus Fast button --- */
 .bonus-controls {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 14px !important;
-  margin-top: 3.5% !important;
-}
-.bonus-fast-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: min(92%, 360px);
+  gap: clamp(10px, 3vw, 18px);
   justify-content: center;
-  gap: 1px;
-  width: clamp(52px, 14vw, 68px);
-  height: clamp(52px, 14vw, 68px);
-  border-radius: 50%;
-  border: 3px solid transparent;
-  background:
-    linear-gradient(180deg, #ff63bb 0%, #da007d 42%, #8a0054 100%) padding-box,
-    linear-gradient(180deg, #fff4b5 0%, #ffcf45 45%, #b66a05 100%) border-box;
-  box-shadow:
-    0 4px 0 #56002f,
-    0 8px 14px #000a,
-    inset 0 -5px 8px #5a003055,
-    inset 0 2px 2px #ffffff88;
-  color: #ffeaa6;
+  align-items: center;
+  margin-top: 3%;
+}
+.bonus-speed-btn {
+  min-width: 82px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1.5px solid #ffe27a;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #542080, #260b43);
+  color: #ffe9a3;
+  box-shadow: 0 3px 0 #170526, 0 5px 12px #0008, inset 0 1px 0 #ffffff33;
+  font-size: clamp(10px, 2.8vw, 12px);
+  font-weight: 900;
+  letter-spacing: .06em;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s, filter 0.12s, box-shadow 0.12s;
-  position: relative;
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
 }
-.bonus-fast-btn::before {
-  content: "";
-  position: absolute;
-  left: 16%;
-  right: 16%;
-  top: 6%;
-  height: 38%;
-  border-radius: 50% 50% 55% 55% / 80% 80% 35% 35%;
-  background: linear-gradient(180deg, #ffffffaa, #ffffff00);
-  pointer-events: none;
+.bonus-speed-btn.active {
+  background: linear-gradient(180deg, #ffe27a, #d99008);
+  color: #351044;
+  box-shadow: 0 3px 0 #704300, 0 0 14px #ffd24a66, inset 0 1px 0 #ffffff88;
 }
-.bonus-fast-btn .bonus-fast-chevs {
-  font-size: clamp(16px, 4.5vw, 22px);
-  font-weight: 900;
-  line-height: 1;
-  color: #ffe27a;
-  text-shadow: 0 1px 2px #4a0026;
-  letter-spacing: -0.08em;
+.bonus-speed-btn:active { transform: scale(.95); filter: brightness(1.08); }
+.bonus-speed-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+/* Keep the oversized coins visibly large instead of clipping them at the cell edge. */
+.bonus-cell.has-coin,
+.collector-cell.active {
+  overflow: visible;
+  z-index: 2;
+  isolation: isolate;
 }
-.bonus-fast-btn em {
-  font-style: normal;
-  font-weight: 900;
-  font-size: clamp(8px, 2.2vw, 11px);
-  letter-spacing: 0.04em;
-  color: #ffeaa6;
-  text-shadow: 0 1px 1px #4b0027;
+.bonus-cell.has-coin > img {
+  width: 120% !important;
+  height: 120% !important;
+  max-width: none;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
-.bonus-fast-btn:active {
-  transform: scale(0.92);
-  filter: brightness(1.05);
+.bonus-cell .coin-label {
+  top: 50%;
+  max-width: 92%;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(38, 8, 46, .38);
+  box-shadow: none;
+  font-size: clamp(12px, 3.5cqw, 18px);
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #280018, 0 0 5px #000;
 }
-.bonus-fast-btn.active {
-  background:
-    linear-gradient(180deg, #9a35f0 0%, #5a0e92 50%, #2a0050 100%) padding-box,
-    linear-gradient(180deg, #ffffff 0%, #ffe27a 45%, #e0a000 100%) border-box;
-  box-shadow:
-    0 4px 0 #1c0036,
-    0 8px 14px #000a,
-    0 0 18px #ffd24a99,
-    inset 0 -5px 8px #1c003688,
-    inset 0 2px 2px #ffffff88;
-  animation: ctlGlow 1.6s ease-in-out infinite;
+.collector-cell.active > img {
+  width: 120% !important;
+  height: 120% !important;
+  max-width: none;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
-.bonus-fast-btn.active .bonus-fast-chevs {
-  animation: chevSlide 0.7s ease-in-out infinite;
+.collector-cell.active .collector-value,
+.collector-cell.active b {
+  top: 50%;
+  max-width: 94%;
+  white-space: nowrap;
+  font-size: clamp(13px, 3.8cqw, 21px) !important;
+  text-shadow: 0 1px 0 #fff9, 0 1px 4px #5a3300 !important;
+}
+.bonus-cell.empty,
+.collector-cell.empty {
+  border-style: solid !important;
+  border-color: #ffcf5238 !important;
+  background: linear-gradient(180deg, #310b35b8, #16051eaa) !important;
+}
+.bonus-cell.empty::after,
+.collector-cell.empty::after {
+  color: #d94aa8;
+  opacity: .3;
+  font-size: clamp(32px, 8.5cqw, 48px);
+  text-shadow: 0 2px 8px #ff3ca833;
+}
+
+/* More readable balance and wager chips on narrow phones. */
+.status {
+  gap: clamp(4px, 1.5vw, 12px);
+  padding-left: clamp(5px, 2vw, 14px);
+  padding-right: clamp(5px, 2vw, 14px);
+}
+.balance, .bet-value {
+  min-width: 0;
+  gap: clamp(4px, 1.2vw, 8px);
+  padding: 4px clamp(6px, 1.8vw, 12px);
+  font-variant-numeric: tabular-nums;
+}
+.balance b, .bet-value b { letter-spacing: 0; }
+@media (max-width: 380px) {
+  .bonus-controls { gap: 8px; }
+  .bonus-speed-btn { min-width: 72px; padding-inline: 9px; }
+  .bonus-spin-btn { width: 68px; height: 68px; }
+  .status { font-size: 11px; }
 }
