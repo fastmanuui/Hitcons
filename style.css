@@ -1525,3 +1525,39 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 @keyframes startupCrown { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes startupCoin { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.15); opacity: 1; } }
 @keyframes startupPulse { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
+/* ===== Bonus coins: unified size, 3D gold collector value ===== */
+
+/* One size for: landed prize coins, collectors, and spinning symbols */
+.game .bonus-cell.has-coin > img,
+.game .collector-cell.active > img,
+.game .bonus-cell .box-item img,
+.game .collector-cell .box-item img {
+  width: 118% !important;
+  height: 118% !important;
+  max-width: none !important;
+  flex: none !important;
+  object-fit: contain !important;
+}
+
+/* Prize coins already show their value in the image, so no label */
+.game .bonus-cell .coin-label,
+.game .bonus-cell .strip-label { display: none !important; }
+
+/* Collector value: bigger, gold, 3D */
+.game .collector-cell.active .collector-value,
+.game .collector-cell.active b {
+  font-size: clamp(24px, 7cqw, 36px) !important;
+  font-weight: 1000 !important;
+  color: #ffd84a !important;
+  -webkit-text-stroke: 1.5px #5a3000;
+  paint-order: stroke fill;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 1px 0 #d9a21b,
+    0 2px 0 #b57f0c,
+    0 3px 0 #8f5d05,
+    0 4px 0 #6a4003,
+    0 5px 0 #4a2a00,
+    0 8px 10px rgba(0,0,0,.65),
+    0 0 14px #ffb62d99 !important;
+}
