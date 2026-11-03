@@ -1639,6 +1639,7 @@ function connectHC2() {
     spinBtn.setAttribute("aria-label","Spin");
     const icon=spinBtn.querySelector("span"); if(icon) icon.textContent="⟳";
     showToast(msg && msg.message || "Spin failed");
+    hc2Socket.emit("requestBalance", { userId: new URLSearchParams(window.location.search).get("userId") || "guest_user" });
     pendingRequestId=null; if(auto) stopAuto();
   });
   hc2Socket.on("hc2SpinResult", message => {
@@ -1648,9 +1649,10 @@ function connectHC2() {
     session.finalSets=gridToReelSets(message.grid); session.serverBonus=message.bonus || null;
     // If exactly two reels show a coin, hold the empty one for anticipation
     // Only anticipate on the RIGHT reel when left + middle already have coins
-    const coinReels = [0, 1, 2].filter(r => session.finalSets[r].some(isCoin));
-    const missingIsRight = coinReels.length === 2 && !coinReels.includes(2);
-    session.third = missingIsRight ? 2 : -1;
+    // Hold the right reel whenever LEFT and MIDDLE both have a coin,
+    // no matter whether the right reel will end up with a coin or not.
+    const leftMidHaveCoins = [0, 1].every(r => session.finalSets[r].some(isCoin));
+    session.third = leftMidHaveCoins ? 2 : -1;
 
     // Always stop left → middle → right (never skip a column)
     const step = fastMode ? 180 : 480;
@@ -1671,6 +1673,7 @@ function spin() {
   if (spinning) { showToast("Waiting for server result…"); return; }
   if (modal || celebrating) return;
   if (!hc2Socket || !hc2Socket.connected) { showToast("Not connected to game server"); if(auto) stopAuto(); return; }
+  if (balance < betAmount) { showToast("Not enough balance"); if (auto) stopAuto(); return; }
   clearTimeout(autoTimer); spinning=true;
   if(auto){autoRemaining--;updateAutoBadge();}
   banner.classList.remove("show","suspense");banner.textContent="";clearWinLines();
@@ -1691,6 +1694,8 @@ function spin() {
   });
   pendingRequestId=`hc2-${Date.now()}-${++requestCounter}`;
   hc2Socket.emit("hc2Spin",{requestId:pendingRequestId,bet:betAmount});
+  balance -= betAmount;      // deduct immediately
+  updateBalance();
 }
 
 /* =====================================================================
