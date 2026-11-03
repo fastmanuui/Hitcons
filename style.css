@@ -23,7 +23,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 .box-strip{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;will-change:transform}
 .box-item{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%}
 .bonus-cell .box-item img,
-.collector-cell .box-item img{width:100%;height:100%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
+.collector-cell .box-item img{width:112%;height:108%;object-fit:contain;filter:blur(.8px) drop-shadow(0 2px 2px #0008)}
 .box-item .strip-label{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-weight:900;
   font-size:clamp(8px,2.2vw,11px);color:#ffe27a;text-shadow:0 1px 2px #000;filter:blur(.6px)}
 
@@ -432,7 +432,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   border-color: #c9a22744;
 }
 .bonus-cell img, .collector-cell img {
-  width: 100%;
+  width: 118%;
   height: 55%;
   object-fit: contain;
   filter: drop-shadow(0 2px 3px #0009);
@@ -697,7 +697,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  width: 118%;
   height: 233.333%; /* seven symbols, each one-third of the visible cell */
   animation: holdCellSpin 0.42s linear infinite;
   will-change: transform;
@@ -715,7 +715,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   position: relative;
 }
 .bonus-cell.spinning .cell-strip .strip-item img {
-  width: 92%;
+  width: 118%;
   height: 92%;
   object-fit: contain;
   filter: blur(1.2px) drop-shadow(0 2px 2px #0008);
@@ -1083,7 +1083,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   animation: none !important;
 }
 .reel-strip .symbol {
-  width: 110%;
+  width: 118%;
   object-fit: contain;
   padding: 0;
   box-sizing: border-box;
