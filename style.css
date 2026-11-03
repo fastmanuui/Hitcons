@@ -811,8 +811,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 .bonus-cell.spinning .cell-strip .strip-item img,
 .collector-cell.spinning .cell-strip .strip-item img {
-  width: 100%;
-  height: 100%;
+  width: 118%;
+  height: 118%;
   min-height: 0;
   filter: blur(0.8px) drop-shadow(0 2px 2px #0008);
 }
@@ -1073,7 +1073,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 110%;
+  width: 118%;
   will-change: transform;
   animation: none !important;
   transform: translate3d(0, 0, 0);
@@ -1258,8 +1258,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 /* Large coins that fill the cell; label / value sit on the coin itself */
 .bonus-cell.has-coin > img {
-  width: 120%;
-  height: 120%;
+  width: 118%;
+  height: 118%;
   object-fit: contain;
   filter: drop-shadow(0 3px 5px #000a) drop-shadow(0 0 10px #ffd24a66);
 }
