@@ -923,7 +923,9 @@ function beginCollectionSpin() {
   b.newCollectorIdx = -1;
   b.skipped = false;
   b.holding = false;
-  renderCollectorBoard();                      // clean idle board: nothing spins yet
+  renderCollectorBoard(); 
+  // clean idle board: nothing spins yet
+  b.respins--;         
   b.animating = true;
   updateBonusUI();
   GameAudio.play("spin");
@@ -952,7 +954,7 @@ function endBonusSpin() {
   if (!b || b.finished || b.holding) return;
   b.holding = true;
   const gotSomething = b.anyCoin || b.newCollectorIdx >= 0;
-  b.respins = gotSomething ? 3 : Math.max(0, b.respins - 1);
+  if (gotSomething) b.respins = 3;   // a coin or new collector resets to 3
   updateBonusUI();
   if (!b.skipped) GameAudio.play(gotSomething ? "coin" : "stop");
   const t = bonusTiming();
