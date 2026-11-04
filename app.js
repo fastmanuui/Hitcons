@@ -29,7 +29,7 @@ const LANDING_MATH = {
 // Relative chance of each coin landing on the LEFT / RIGHT reels (bigger = more common).
 const LANDING_COIN_WEIGHTS = {
   "coin_1.png": 20, "coin_2.png": 15, "coin_5.png": 5,
-  "coin_10.png":3 , "coin_15.png": 2,
+  "coin_10.png":1.5 , "coin_15.png": 1,
   "crown_coin.png": 1.5,
   "mini.png": 0.7, "minor.png": 0.3, "major.png": 0.1, "grand.png": 0.09
 };
@@ -40,16 +40,16 @@ const LANDING_COIN_WEIGHTS = {
    Completely separate from the landing math above.                    */
 const COLLECT_MATH = {
   leftCoinChance: 0.30,         // per-box chance a coin lands in the LEFT column
-  rightCoinChance: 0.20,        // per-box chance a coin lands in the RIGHT column
-  newCollectorChance: 0.10,     // chance a new collector appears in a spin
+  rightCoinChance: 0.30,        // per-box chance a coin lands in the RIGHT column
+  newCollectorChance: 0.15,     // chance a new collector appears in a spin
   maxCollectors: 3
 };
 // Relative chance of each coin landing in the bonus (bigger = more common).
 const COLLECT_COIN_WEIGHTS = {
-  "coin_1.png": 5.5, "coin_2.png": 3.3, "coin_5.png": 2.2,
-  "coin_10.png": 1, "coin_15.png": 0.5,
+  "coin_1.png": 14.5, "coin_2.png": 6.0, "coin_5.png": 3.2,
+  "coin_10.png": 1.4, "coin_15.png": 1,
   "crown_coin.png": 1.5,
-  "mini.png": 0.7, "minor.png": 0.2, "major.png": 0.1, "grand.png": 0.01
+  "mini.png": 0.8, "minor.png": 0.4, "major.png": 0.1, "grand.png": 0.07
 };
 
 const PAYOUTS = {
