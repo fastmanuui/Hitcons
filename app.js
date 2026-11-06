@@ -13,7 +13,9 @@ const FRUIT_SYMBOLS = ["stars.png", "bells.png", "watermelon.png", "grapes.png",
 const SPECIAL_COINS = [ "mini.png", "minor.png", "major.png", "grand.png",];
 const NUMBER_COINS  = ["crown_coin.png","coin_1.png", "coin_2.png",  "coin_5.png", "coin_10.png", "coin_15.png"];
 const COIN_SYMBOLS  = [...SPECIAL_COINS, ...NUMBER_COINS];
+const SIDE_COIN_SYMBOLS = COIN_SYMBOLS.filter(n => n !== "crown_coin.png");
 const symbols = ["sevens.png", ...FRUIT_SYMBOLS, ...COIN_SYMBOLS];
+
 
 /* ---------------------------------------------------------------------
    COIN LANDING math  (MAIN GAME — the 3 coins that trigger the bonus)
@@ -343,13 +345,13 @@ function pickWeightedSymbol() {
   return "lemon.png";
 }
 function pickWeightedCoin(weights) {
-  const total = COIN_SYMBOLS.reduce((sum, name) => sum + (weights[name] || 1), 0);
+  const total = SIDE_COIN_SYMBOLS.reduce((sum, name) => sum + (weights[name] ?? 1), 0);
   let value = Math.random() * total;
-  for (const name of COIN_SYMBOLS) {
-    value -= (weights[name] || 1);
+  for (const name of SIDE_COIN_SYMBOLS) {
+    value -= (weights[name] ?? 1);
     if (value < 0) return name;
   }
-  return COIN_SYMBOLS[0];
+  return SIDE_COIN_SYMBOLS[0];
 }
 // MAIN GAME landing coin. The middle reel only ever gets the crown coin.
 function pickLandingCoin(reelIndex) {
@@ -665,7 +667,7 @@ function randomSpinStrip() {
     if (Math.random() < 0.22) {
       items.push(`<div class="strip-empty"></div>`);
     } else {
-      const n = COIN_SYMBOLS[Math.floor(Math.random() * COIN_SYMBOLS.length)];
+      const n = SIDE_COIN_SYMBOLS[Math.floor(Math.random() * SIDE_COIN_SYMBOLS.length)];
       const val = BONUS_COIN_VALUES[n] || 1;
       items.push(`<div class="strip-item"><img src="assets/${n}" alt=""><span class="strip-label">x${val}</span></div>`);
     }
@@ -824,8 +826,8 @@ function startBoxSpin(name, idx) {
   const h = cell.clientHeight || 64;       // one symbol = one box height
   const N = 6;
   const names = Array.from({ length: N }, () => {
-    if (Math.random() < (isMid ? 0.3 : 0.22)) return null;   // empty slot
-    return isMid ? "crown_coin.png" : COIN_SYMBOLS[Math.floor(Math.random() * COIN_SYMBOLS.length)];
+    if (Math.random() < (isMid ? 0.3 : 0.22)) return null;   
+         return isMid ? "crown_coin.png" : SIDE_COIN_SYMBOLS[Math.floor(Math.random() * SIDE_COIN_SYMBOLS.length)];
   });
   const strip = document.createElement("div");
   strip.className = "box-strip";
