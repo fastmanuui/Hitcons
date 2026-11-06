@@ -1561,3 +1561,15 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
     0 8px 10px rgba(0,0,0,.65),
     0 0 14px #ffb62d99 !important;
 }
+/* Bonus boxes: sharp, finished look when the strip has landed */
+.bonus-cell.landed .box-item img,
+.collector-cell.landed .box-item img{
+  filter:drop-shadow(0 3px 5px #000a) drop-shadow(0 0 10px #ffd24a66);
+}
+/* Empty collector slot in the strip looks like the final empty slot */
+.collector-cell .box-item.is-empty::after{
+  content:"♛";position:absolute;inset:0;display:grid;place-items:center;
+  font-size:clamp(28px,8cqw,42px);color:#ff9acb;opacity:.28;pointer-events:none;
+}
+/* Left/right boxes: empty means truly empty (no crown silhouette) */
+.bonus-column:not(.collector-column) .bonus-cell.empty::after{display:none}
