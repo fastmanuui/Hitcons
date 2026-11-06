@@ -818,36 +818,60 @@ function stopBoxRaf(name, idx) {
   const b = bonusState, key = name + idx;
   if (b && b.raf && b.raf[key]) { cancelAnimationFrame(b.raf[key]); b.raf[key] = null; }
 }
+/* Which symbol a box will END on (null = empty). The result is known before the spin starts. */
+function bonusBoxTarget(name, idx) {
+  const b = bonusState, out = b.pending;
+  if (name === "mid") return (out.addCollector && idx === b.spinCollectors) ? "crown_coin.png" : null;
+  const coin = out[name][idx];
+  return coin ? coin.name : null;
+}
+
 function startBoxSpin(name, idx) {
   const b = bonusState;
   const cell = bonusColumnEl(name).children[idx];
   if (!b || !cell) return;
   const isMid = name === "mid";
-  const h = cell.clientHeight || 64;       // one symbol = one box height
-  const N = 6;
-  const names = Array.from({ length: N }, () => {
-    if (Math.random() < (isMid ? 0.3 : 0.22)) return null;   
-         return isMid ? "crown_coin.png" : SIDE_COIN_SYMBOLS[Math.floor(Math.random() * SIDE_COIN_SYMBOLS.length)];
-  });
+  const h = cell.clientHeight || 64;
+  const target = bonusBoxTarget(name, idx);
+  const pool = isMid ? ["crown_coin.png"] : SIDE_COIN_SYMBOLS;
+  const COUNT = 8;            // how many symbols scroll past before the stop
+  const COIN_CHANCE = 0.3;    // chance of a coin in the strip (never two in a row)
+
+  // Strip, top to bottom: [result, filler...]. It slides down and stops on item 0.
+  const items = [target];
+  let prevCoin = !!target;
+  for (let i = 0; i < COUNT; i++) {
+    const item = (!prevCoin && Math.random() < COIN_CHANCE)
+      ? pool[Math.floor(Math.random() * pool.length)] : null;
+    items.push(item);
+    prevCoin = !!item;
+  }
+
   const strip = document.createElement("div");
   strip.className = "box-strip";
-  [...names, ...names].forEach(n => strip.appendChild(boxItemEl(n, isMid, h)));
+  items.forEach(n => {
+    const el = boxItemEl(n, isMid, h);
+    if (!n) el.classList.add("is-empty");
+    strip.appendChild(el);
+  });
   cell.className = (isMid ? "collector-cell" : "bonus-cell") + " spinning";
   cell.replaceChildren(strip);
 
-  let offset = -N * h, last = performance.now();
-  const speed = h * (fastMode ? 10 : 5);  // px per second
-  strip.style.transform = `translate3d(0,${offset}px,0)`;
+  const dur = bonusTiming().box * 0.85;   // finish slightly before the box is settled
+  const startY = -COUNT * h;
+  const key = name + idx;
+  const t0 = performance.now();
+  strip.style.transform = `translate3d(0,${startY}px,0)`;
   const tick = now => {
     if (bonusState !== b || !strip.isConnected) return;
-    const dt = Math.min(48, now - last); last = now;
-    offset += speed * dt / 1000;
-    if (offset >= 0) offset -= N * h;      // seamless loop
-    strip.style.transform = `translate3d(0,${offset}px,0)`;
-    b.raf[name + idx] = requestAnimationFrame(tick);
+    const t = Math.min(1, (now - t0) / dur);
+    const eased = 1 - (1 - t) * (1 - t);               // fast start, slow stop
+    strip.style.transform = `translate3d(0,${startY * (1 - eased)}px,0)`;
+    if (t < 1) b.raf[key] = requestAnimationFrame(tick);
+    else { cell.classList.remove("spinning"); cell.classList.add("landed"); }
   };
-  b.raf[name + idx] = requestAnimationFrame(tick);
-}
+  b.raf[key] = requestAnimationFrame(tick);
+     }
 
 /* Order: left top→bottom, mid (empty slots only), right top→bottom */
 function buildBonusQueue() {
@@ -903,7 +927,7 @@ function settleBonusCell(name, idx, order = 0) {
   }
   const fresh = col.children[idx];
   if (fresh) {
-    fresh.classList.add("settle");
+    if (order) fresh.classList.add("settle");
     if (order) fresh.style.setProperty("--settle-delay", (order * 70) + "ms");
     if (landed) fresh.classList.add("landed-flash");
   }
