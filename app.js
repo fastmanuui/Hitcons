@@ -834,7 +834,7 @@ function startBoxSpin(name, idx) {
   const h = cell.clientHeight || 64;
   const target = bonusBoxTarget(name, idx);
   const pool = isMid ? ["crown_coin.png"] : SIDE_COIN_SYMBOLS;
-  const COUNT = 4;            // how many symbols scroll past before the stop
+  const COUNT = 8;            // how many symbols scroll past before the stop
   const COIN_CHANCE = 0.1;    // chance of a coin in the strip (never two in a row)
 
   // Strip, top to bottom: [result, filler...]. It slides down and stops on item 0.
