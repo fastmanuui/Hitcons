@@ -30,7 +30,6 @@ const LANDING_MATH = {
 const LANDING_COIN_WEIGHTS = {
   "coin_1.png": 20, "coin_2.png": 15, "coin_5.png": 5,
   "coin_10.png":1.5 , "coin_15.png": 1,
-  "crown_coin.png": 1.5,
   "mini.png": 0.7, "minor.png": 0.3, "major.png": 0.1, "grand.png": 0.09
 };
 
