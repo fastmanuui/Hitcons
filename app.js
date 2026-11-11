@@ -2319,3 +2319,235 @@ if (document.body.classList.contains("game-ready")) startIdleFx();
      =================================================================== */
   finishSpin = function (session) {
     if (activeSpin !== session || session.finished || !session.serverResult) return;
+    session.finished = true;
+    clearSession(session);
+    game.classList.remove("anticipating");
+    reels.forEach(r => r.classList.remove("spinning-reel", "anticipate-reel"));
+    banner.classList.remove("show", "suspense");
+    banner.textContent = "";
+    clearWinLines();
+
+    const wins = (session.serverResult.lineWins || []).map(w => ({
+      symbol: w.symbol, multiplier: Number(w.multiplier), amount: betAmount * Number(w.multiplier),
+      line: PAYLINES[Number(w.line)] || []
+    }));
+    const payout = Number(session.serverResult.payout || 0);
+    const lineTotal = wins.reduce((s, w) => s + w.amount, 0);
+    balance = Number(session.serverResult.balance);
+    updateBalance();
+
+    const tier = !wins.length ? "none"
+      : isMajorWin(wins) ? "major"
+      : (isBigWin(wins) || lineTotal >= betAmount * 25) ? "big" : "win";
+
+    spinning = false; activeSpin = null;
+    spinBtn.classList.remove("spinning"); spinBtn.classList.add("stopped");
+    spinBtn.setAttribute("aria-label", "Spin");
+    const icon = spinBtn.querySelector("span"); if (icon) icon.textContent = "⟳";
+
+    const hasBonus = !!session.serverBonus;
+    const proceed = () => {
+      if (hasBonus) {
+        if (auto) stopAuto("Auto spin stopped — coin bonus!");
+        celebrateCoins(session);
+        return;
+      }
+      celebrating = false;
+      game.classList.add("idle-on");
+      if (auto) {
+        if (autoRemaining <= 0) stopAuto("Auto spin finished");
+        else if (balance < betAmount) stopAuto("Auto spin stopped — balance too low");
+        else scheduleAuto(payout > 0 ? 1400 : (fastMode ? 250 : 450));
+      }
+    };
+
+    if (wins.length) {
+      showWinLines(wins);
+      showToast(`${wins.length} winning line${wins.length === 1 ? "" : "s"}!`);
+      if (tier === "major" || tier === "big") {
+        celebrating = true;              // blocks spin/auto/bet while the overlay is open
+        showWinOverlay({
+          tier, wins, payout: lineTotal,
+          onClose: () => {
+            if (!hasBonus) {
+              banner.textContent = (tier === "major" ? "MAJOR WIN " : "BIG WIN ") + money(lineTotal);
+              banner.classList.add("show");
+            }
+            proceed();
+          }
+        });
+        return;
+      }
+      GameAudio.play("win");
+      celebrateWin(lineTotal, false);
+    }
+    proceed();
+  };
+
+  /* ===================================================================
+     6. BONUS — intro dialog, result overlay, FAST button, coin sounds,
+        flying coins, respin-reset cue.
+     =================================================================== */
+  showBonusOverlay = function (coinNames, session) {
+    clearCelebrationFx();
+    closeModal();
+    openModal(`
+      <div class="bonus-burst"></div>
+      <div class="bonus-coins">${coinNames.map((n, i) => `<img class="bonus-coin-img" style="animation-delay:${i * 0.12}s" src="assets/${n}" alt="coin">`).join("")}</div>
+      <p class="bonus-kicker">COIN BONUS</p>
+      <h2 id="dlgTitle">CONGRATULATIONS!</h2>
+      <p class="bonus-sub">YOU UNLOCKED THE COLLECTOR BONUS</p>
+      <ul class="bonus-perks">
+        <li><b>3</b><span>RESPINS</span></li>
+        <li><b>↺</b><span>RESET ON EVERY COIN</span></li>
+        <li><b>♛</b><span>UP TO 3 COLLECTORS</span></li>
+      </ul>
+      <button type="button" class="dialog-primary" id="startCoinBonus">START BONUS</button>`, "bonus-dialog");
+    GameAudio.play("bonus");
+    modal.querySelector("#startCoinBonus").addEventListener("click", () => {
+      closeModal();
+      startCoinCollection(session);
+    });
+  };
+
+  showBonusWinOverlay = function (multiplier, payout) {
+    const old = bonusPage.querySelector(".bonus-win-overlay, .win-ov");
+    if (old) old.remove();
+    const m = Number(multiplier) || 0;
+    const tier = m >= 50 ? "major" : m >= 20 ? "big" : "win";
+    showWinOverlay({
+      tier, payout, mult: m, parent: bonusPage, noAuto: true,
+      label: tier === "win" ? "YOU WIN" : (tier === "big" ? "BIG WIN" : "MAJOR WIN"),
+      kicker: "BONUS ROUND COMPLETE",
+      buttonLabel: "COLLECT WIN",
+      rowsHtml: `
+        <div class="win-ov__row no-img" style="--d:.6s"><span class="nm">BONUS MULTIPLIER<small>Total of all collectors</small></span><b>×${fmtMult(m)}</b></div>
+        <div class="win-ov__row no-img" style="--d:.74s"><span class="nm">YOUR BET<small>Per spin</small></span><b>${money(betAmount)}</b></div>`,
+      onClose: () => {
+        if (bonusState) clearTimeout(bonusState.autoReturnTimer);
+        exitBonusToMain();
+      }
+    });
+  };
+
+  /* every coin that lands in the bonus makes a sound, even when a tap stops all boxes at once */
+  const _settleBonusCell = settleBonusCell;
+  settleBonusCell = function (name, idx, order = 0) {
+    const b = bonusState;
+    const was = !!(b && b.settled && b.settled[name][idx]);
+    _settleBonusCell(name, idx, order);
+    if (!b || was || !order) return;
+    let coin = false, tier = 1;
+    if (name === "mid") coin = b.newCollectorIdx === idx;
+    else if (b.pending && b.pending[name][idx]) { coin = true; tier = tierOfCoin(b.pending[name][idx].name); }
+    if (coin) setTimeout(() => Fx.coinLand(tier), order * 70);
+  };
+
+  function pulseRespins() {
+    const badge = document.querySelector(".respins-badge");
+    if (!badge) return;
+    badge.classList.remove("reset-pop"); void badge.offsetWidth; badge.classList.add("reset-pop");
+    const tag = document.createElement("span");
+    tag.className = "respin-reset-tag"; tag.textContent = "RESET!";
+    badge.appendChild(tag);
+    setTimeout(() => { tag.remove(); badge.classList.remove("reset-pop"); }, 1100);
+  }
+
+  function flyCoins(b) {
+    const hr = bonusPage.getBoundingClientRect();
+    const n = b.collectors.length;
+    if (!n) return;
+    const cells = [...leftColumnEl.children, ...rightColumnEl.children].filter(c => c.classList.contains("has-coin"));
+    cells.forEach((cell, i) => {
+      const img = cell.querySelector("img");
+      const tcell = midColumnEl.children[i % n];
+      if (!img || !tcell) return;
+      const r = img.getBoundingClientRect(), tr = tcell.getBoundingClientRect();
+      const f = document.createElement("img");
+      f.src = img.src; f.className = "fly-coin"; f.alt = "";
+      f.style.cssText = `left:${r.left - hr.left}px;top:${r.top - hr.top}px;width:${r.width}px;height:${r.height}px`;
+      bonusPage.appendChild(f);
+      const dx = (tr.left + tr.width / 2) - (r.left + r.width / 2);
+      const dy = (tr.top + tr.height / 2) - (r.top + r.height / 2);
+      const anim = f.animate([
+        { transform: "translate(0,0) scale(1) rotate(0)", opacity: 1 },
+        { transform: `translate(${dx * .45}px,${dy * .45 - 34}px) scale(1.15) rotate(180deg)`, opacity: 1, offset: .5 },
+        { transform: `translate(${dx}px,${dy}px) scale(.35) rotate(360deg)`, opacity: .2 }
+      ], { duration: fastMode ? 380 : 620, delay: i * 70, easing: "cubic-bezier(.5,0,.8,.6)", fill: "both" });
+      anim.onfinish = () => { f.remove(); Fx.collectTick(i); };
+    });
+  }
+
+  /* Same flow as script.js, with: FAST-aware timings, flying coins, respin-reset cue.
+     The extra "coin" sound at the end of a spin is gone (each coin has its own now). */
+  endBonusSpin = function () {
+    const b = bonusState;
+    if (!b || b.finished || b.holding) return;
+    b.holding = true;
+    const gotSomething = b.anyCoin || b.newCollectorIdx >= 0;
+    if (gotSomething) { if (b.respins < 3) pulseRespins(); b.respins = 3; }
+    updateBonusUI();
+    if (!b.skipped && !gotSomething) GameAudio.play("stop");
+    const t = bonusTiming();
+    const k = fastMode ? 0.55 : 1;
+
+    b.timer = setTimeout(() => {
+      if (bonusState !== b) return;
+      if (b.coinSum > 0) {
+        for (let i = 0; i < b.collectors.length; i++) b.collectors[i] = +(b.collectors[i] + b.coinSum).toFixed(2);
+        flyCoins(b);
+        [leftColumnEl, rightColumnEl].forEach(col =>
+          Array.from(col.children).forEach(c => { if (c.classList.contains("has-coin")) c.classList.add("coin-collect"); }));
+      }
+      renderCollectorBoard({ preserveSide: true, newCollectorIndex: b.newCollectorIdx });
+      updateBonusUI();
+      if (b.coinSum > 0) {
+        for (let i = 0; i < b.collectors.length; i++) {
+          const el = midColumnEl.children[i];
+          if (!el) continue;
+          el.classList.add("value-bump");
+          el.insertAdjacentHTML("beforeend", `<span class="collector-gain">+${b.coinSum}</span>`);
+        }
+        haptic(12);
+        if (b.coinSum >= 10 || b.total >= 50) spawnCoinShower(Math.min(18, 8 + Math.floor(b.coinSum / 5)));
+      }
+      b.timer = setTimeout(() => {
+        if (bonusState !== b) return;
+        b.left = [null, null, null];
+        b.right = [null, null, null];
+        b.animating = false;
+        b.holding = false;
+        renderCollectorBoard();
+        updateBonusUI();
+        if (b.respins <= 0) {
+          b.timer = setTimeout(() => autoFinishCollection(), 800 * k);
+        } else {
+          b.timer = setTimeout(() => {
+            if (bonusState && !bonusState.animating && !bonusState.finished) beginCollectionSpin();
+          }, BONUS_SPIN_GAP_MS * k);
+        }
+      }, (b.coinSum > 0 ? 650 : 250) * k);
+    }, gotSomething ? t.hold : 450 * k);
+  };
+
+  /* FAST button on the bonus page — mirrors the main game's FAST button */
+  (() => {
+    const host = bonusSpinBtn && bonusSpinBtn.parentElement;
+    if (!host || !fastBtn) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "bonusFast";
+    btn.className = "ctl bonus-fast";
+    btn.setAttribute("aria-label", "Fast spin");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l7 7-7 7M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><em>FAST</em>`;
+    host.appendChild(btn);
+    const sync = () => {
+      btn.classList.toggle("active", fastBtn.classList.contains("active"));
+      btn.setAttribute("aria-pressed", String(fastBtn.classList.contains("active")));
+    };
+    // reuse the main button's handler so state, toast and timings stay in one place
+    btn.addEventListener("click", e => { e.stopPropagation(); fastBtn.click(); });
+    new MutationObserver(sync).observe(fastBtn, { attributes: true, attributeFilter: ["class"] });
+    sync();
+  })();
+})();
