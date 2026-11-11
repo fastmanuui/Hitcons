@@ -1573,3 +1573,563 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden}
 }
 /* Left/right boxes: empty means truly empty (no crown silhouette) */
 .bonus-column:not(.collector-column) .bonus-cell.empty::after{display:none}
+
+/* =====================================================================
+   Hit Coins 2 — improvements.css
+   Load AFTER style.css.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. MODERN DIALOGS (bet, auto, settings, how-to-play, bonus intro)
+   --------------------------------------------------------------------- */
+.game-overlay {
+  background: radial-gradient(ellipse at 50% 28%, rgba(130, 24, 96, .55), rgba(8, 0, 12, .93) 72%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 5%;
+  animation: hc2Fade .25s ease-out both;
+}
+.game-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 470px;
+  gap: 16px;
+  padding: 24px 20px 20px;
+  border: 2px solid transparent;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(78, 12, 70, .94), rgba(26, 4, 32, .97)) padding-box,
+    linear-gradient(155deg, #fff4ae 0%, #ffcf52 28%, #c0521a 62%, #ffd86a 100%) border-box;
+  box-shadow:
+    0 0 0 6px rgba(255, 210, 74, .06),
+    0 24px 60px rgba(0, 0, 0, .65),
+    0 0 46px rgba(255, 60, 160, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .18);
+  animation: hc2Pop .4s cubic-bezier(.2, 1.25, .35, 1) both;
+}
+.game-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255, 255, 255, .14), transparent 70%);
+}
+.game-dialog h2 {
+  background: linear-gradient(180deg, #fffbd0 0%, #ffd24a 55%, #f08a00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  letter-spacing: .14em;
+  filter: drop-shadow(0 2px 0 #5a0030);
+}
+.game-dialog h2::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin: 10px auto 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, #ffd24a, transparent);
+}
+.game-dialog h3 { letter-spacing: .08em; }
+.game-dialog .dialog-sub {
+  align-self: center;
+  padding: 5px 16px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 226, 122, .3);
+  color: #ffe9a8;
+  letter-spacing: .04em;
+}
+
+/* chips */
+.bet-option {
+  position: relative;
+  border: 1px solid rgba(255, 207, 82, .35);
+  border-radius: 14px;
+  color: #ffe9a8;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .02)),
+    rgba(100, 12, 76, .75);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 3px 8px rgba(0, 0, 0, .35);
+  transition: transform .12s, box-shadow .15s, background .15s, border-color .15s;
+}
+.bet-option:not(:disabled):hover { transform: translateY(-1px); border-color: #ffd24a; }
+.bet-option:not(:disabled):active { transform: scale(.95); }
+.bet-option.selected {
+  color: #3a0f2c;
+  border-color: #fff4ae;
+  background: linear-gradient(180deg, #fff7a8, #ffc92e 52%, #f29a12);
+  box-shadow: 0 0 0 2px rgba(255, 240, 166, .55), 0 0 18px rgba(255, 201, 46, .55), inset 0 2px 0 rgba(255, 255, 255, .7);
+  transform: scale(1.04);
+}
+.bet-option.selected::after {
+  content: "✓";
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #17b86a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  border: 2px solid #fff;
+}
+
+/* buttons */
+.dialog-primary {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  color: #3a0f2c;
+  letter-spacing: .1em;
+  background: linear-gradient(180deg, #fff7a8, #ffc92e 50%, #f29a12);
+  box-shadow: 0 5px 0 #9a4a13, 0 10px 22px rgba(255, 190, 40, .35), inset 0 2px 0 rgba(255, 255, 255, .7);
+  transition: transform .1s, box-shadow .1s;
+}
+.dialog-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .6), transparent);
+  transform: skewX(-18deg);
+  animation: hc2Shine 3.2s ease-in-out infinite;
+}
+.dialog-primary:not(:disabled):active { transform: translateY(3px); box-shadow: 0 2px 0 #9a4a13, 0 4px 12px rgba(255, 190, 40, .3); }
+.dialog-secondary {
+  border: 1px solid rgba(255, 226, 122, .45);
+  border-radius: 16px;
+  color: #ffe9a8;
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+.dialog-secondary:active { transform: scale(.97); }
+
+/* settings rows */
+.setting-row, .menu-link {
+  border: 1px solid rgba(255, 226, 122, .25);
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.menu-link { transition: transform .12s, border-color .15s; }
+.menu-link:hover { border-color: #ffd24a; transform: translateX(2px); }
+.switch { border-color: rgba(255, 226, 122, .7); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .5); }
+.pay-cell, .mini-grid {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+  border-color: rgba(255, 226, 122, .25);
+}
+.dialog-scroll { scrollbar-width: thin; scrollbar-color: #ffcf52 transparent; }
+
+/* bonus intro dialog */
+.bonus-dialog { overflow: hidden; text-align: center; }
+.bonus-dialog > * { position: relative; z-index: 1; }
+.bonus-dialog .bonus-burst {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 24%;
+  width: 170%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 226, 122, .2) 0 8deg, transparent 8deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 60%);
+  mask-image: radial-gradient(circle, #000 0, transparent 60%);
+  animation: hc2SpinCentered 20s linear infinite;
+}
+.bonus-kicker { letter-spacing: .3em; font-size: clamp(10px, 2.8cqw, 13px); color: #ffd9f0 !important; }
+.bonus-dialog .bonus-coin-img {
+  width: clamp(54px, 17cqw, 88px);
+  height: clamp(54px, 17cqw, 88px);
+  filter: drop-shadow(0 0 16px #ffd24a) drop-shadow(0 6px 4px rgba(0, 0, 0, .6));
+}
+.bonus-sub { letter-spacing: .1em; font-size: clamp(11px, 3cqw, 14px); }
+.bonus-perks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.bonus-perks li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 226, 122, .28);
+}
+.bonus-perks b { font-size: clamp(20px, 6cqw, 28px); color: #ffe27a; line-height: 1; }
+.bonus-perks span { font-size: clamp(8px, 2.3cqw, 11px); font-weight: 800; letter-spacing: .06em; color: #ffd9f0; line-height: 1.2; }
+
+@keyframes hc2Fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes hc2Pop { from { opacity: 0; transform: translateY(22px) scale(.9) } to { opacity: 1; transform: none } }
+@keyframes hc2Shine { 0%, 55% { left: -60% } 100% { left: 130% } }
+@keyframes hc2SpinCentered {
+  from { transform: translate(-50%, -50%) rotate(0) }
+  to { transform: translate(-50%, -50%) rotate(360deg) }
+}
+
+/* ---------------------------------------------------------------------
+   2. 3D COINS — sway right <-> left while the reels are idle
+   --------------------------------------------------------------------- */
+.reel .symbols { perspective: 620px; }
+.game.idle-on:not(.bonus-active) .symbol.coin-3d:not(.coin-hit):not(.coin-wait):not(.symbol-pop) {
+  animation: coinSway3dA 3.4s ease-in-out infinite alternate;
+  animation-delay: var(--coin-delay, 0s);
+  will-change: translate, rotate, filter;
+}
+@keyframes coinSway3dA {
+  from {
+    translate: 4% 0;
+    rotate: y -24deg;
+    filter: brightness(.88) drop-shadow(3px 4px 2px #120008aa) drop-shadow(2px 0 0 #8a5400);
+  }
+  50% {
+    filter: brightness(1.14) drop-shadow(0 5px 3px #120008aa) drop-shadow(0 0 9px #ffd65a99);
+  }
+  to {
+    translate: -4% 0;
+    rotate: y 24deg;
+    filter: brightness(.88) drop-shadow(-3px 4px 2px #120008aa) drop-shadow(-2px 0 0 #8a5400);
+  }
+}
+
+/* prize coins inside the bonus board */
+.game .bonus-cell.has-coin {
+  perspective: 420px;
+  --sway: coinSway3dB 3.4s ease-in-out infinite alternate;
+}
+.game .bonus-cell.has-coin > img { animation: var(--sway); }
+.game .bonus-cell.has-coin.landed-flash > img { animation: coinGlowPulse .7s ease-out, var(--sway); }
+.game .bonus-cell.has-coin.settle > img {
+  animation: cellSettle .42s cubic-bezier(.2, 1.3, .4, 1) var(--settle-delay, 0s) backwards, var(--sway);
+}
+.game .bonus-cell.has-coin.settle.landed-flash > img {
+  animation: cellSettle .42s cubic-bezier(.2, 1.3, .4, 1) var(--settle-delay, 0s) backwards, coinGlowPulse .7s ease-out, var(--sway);
+}
+.game .bonus-cell.has-coin.coin-collect > img { animation: coinCollect .55s ease-in forwards !important; }
+@keyframes coinSway3dB {
+  from { translate: 5% 0; rotate: y -26deg; }
+  to { translate: -5% 0; rotate: y 26deg; }
+}
+
+/* ---------------------------------------------------------------------
+   3. ANTICIPATION GLOW — only the LAST ROW of the 3rd reel
+   --------------------------------------------------------------------- */
+.reel.anticipate-reel { animation: none !important; }
+.ant-glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 10px;
+  mix-blend-mode: screen;
+  background: radial-gradient(ellipse 72% 64% at 50% 55%, rgba(255, 226, 102, .85) 0%, rgba(255, 178, 40, .45) 46%, rgba(255, 160, 0, 0) 76%);
+  box-shadow: inset 0 -2px 0 rgba(255, 236, 150, .9), inset 0 0 18px rgba(255, 214, 80, .8);
+  transform-origin: 50% 100%;
+  animation: antGlowPulse .5s ease-in-out infinite alternate, antGlowGrow var(--ant-ms, 5s) ease-in forwards;
+}
+@keyframes antGlowPulse { from { filter: brightness(.85) } to { filter: brightness(1.4) } }
+@keyframes antGlowGrow { from { opacity: .55; transform: scaleY(.8) } to { opacity: 1; transform: scaleY(1.1) } }
+
+/* ---------------------------------------------------------------------
+   4. WIN OVERLAYS (Big win / Major win / Bonus result)
+   --------------------------------------------------------------------- */
+.win-ov {
+  --c1: #ffd24a;
+  --c2: #ff4fa3;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, rgba(96, 12, 84, .84), rgba(6, 0, 10, .95) 72%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: woIn .35s ease-out both;
+}
+.win-ov--major {
+  --c1: #ffe27a;
+  --c2: #ff2f6d;
+  background: radial-gradient(ellipse at 50% 40%, rgba(160, 10, 72, .88), rgba(6, 0, 10, .97) 74%);
+}
+.win-ov--major::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 44%, #fff8cc, rgba(255, 226, 122, .5) 40%, transparent 70%);
+  animation: woFlash .9s ease-out both;
+}
+.win-ov.is-closing { animation: woOut .28s ease-in both; }
+.win-ov__fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+.win-ov__rays {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 190%;
+  aspect-ratio: 1;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 226, 122, .22) 0 7deg, transparent 7deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 62%);
+  mask-image: radial-gradient(circle, #000 0, transparent 62%);
+  animation: hc2SpinCentered 18s linear infinite;
+}
+.win-ov--major .win-ov__rays { animation-duration: 11s; background: repeating-conic-gradient(rgba(255, 226, 122, .3) 0 6deg, transparent 6deg 15deg); }
+.win-ov__glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 90%;
+  aspect-ratio: 1;
+  z-index: 2;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 190, 60, .38), transparent 62%);
+  animation: woGlow 2s ease-in-out infinite alternate;
+}
+.win-ov__card {
+  position: relative;
+  z-index: 4;
+  width: min(90%, 430px);
+  max-height: 94%;
+  overflow: hidden auto;
+  padding: clamp(18px, 5cqw, 30px) clamp(16px, 5cqw, 26px) clamp(16px, 4cqw, 24px);
+  text-align: center;
+  border: 2px solid transparent;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(66, 12, 72, .9), rgba(22, 4, 32, .95)) padding-box,
+    linear-gradient(150deg, #fff6b0, var(--c1) 30%, var(--c2) 70%, var(--c1)) border-box;
+  box-shadow: 0 0 0 6px rgba(255, 210, 74, .08), 0 0 60px rgba(255, 190, 60, .4), 0 24px 60px rgba(0, 0, 0, .7);
+  animation: woCard .55s cubic-bezier(.2, 1.25, .35, 1) both;
+  scrollbar-width: none;
+}
+.win-ov__card::-webkit-scrollbar { display: none; }
+.win-ov--major .win-ov__card { box-shadow: 0 0 0 6px rgba(255, 210, 74, .12), 0 0 90px rgba(255, 60, 120, .55), 0 24px 60px rgba(0, 0, 0, .75); }
+.win-ov__badge { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; }
+.win-ov__badge i {
+  font-style: normal;
+  font-size: clamp(18px, 5.4cqw, 28px);
+  color: #ffd24a;
+  text-shadow: 0 0 12px #ffb62d, 0 2px 0 #7a3a00;
+  animation: woStar .5s cubic-bezier(.2, 1.8, .4, 1) both;
+  animation-delay: calc(.2s + var(--i) * .09s);
+}
+.win-ov__badge i:nth-child(3) { font-size: 1.3em; }
+.win-ov__kicker {
+  margin: 0 0 4px;
+  font-weight: 900;
+  letter-spacing: .24em;
+  font-size: clamp(10px, 2.8cqw, 13px);
+  color: #ffd9f0;
+  min-height: 1em;
+}
+.win-ov__title {
+  margin: 2px 0 6px;
+  font-size: clamp(34px, 11cqw, 58px);
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: .04em;
+  font-style: italic;
+}
+.win-ov--big .win-ov__title, .win-ov--win .win-ov__title { font-size: clamp(30px, 9.5cqw, 50px); }
+.win-ov__title i {
+  display: inline-block;
+  font-style: inherit;
+  background: linear-gradient(180deg, #fffbd0 0%, var(--c1) 45%, #ff8a00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #6a0030) drop-shadow(0 0 14px rgba(255, 200, 60, .55));
+  animation: woLetter .6s cubic-bezier(.2, 1.6, .4, 1) both;
+  animation-delay: calc(.25s + var(--i) * .045s);
+}
+.win-ov.is-done .win-ov__title { animation: woPulse 1.3s ease-in-out infinite; }
+.win-ov__amount { display: flex; justify-content: center; align-items: baseline; gap: .4em; margin: 6px 0 2px; }
+.win-ov__amount small { font-size: clamp(13px, 3.6cqw, 18px); font-weight: 900; letter-spacing: .16em; color: #ffd9f0; }
+.win-ov__amount b {
+  font-size: clamp(34px, 11cqw, 56px);
+  font-weight: 1000;
+  font-variant-numeric: tabular-nums;
+  color: #fff6b8;
+  -webkit-text-stroke: 1.5px #5a3000;
+  paint-order: stroke fill;
+  text-shadow: 0 1px 0 #d9a21b, 0 2px 0 #b57f0c, 0 3px 0 #8f5d05, 0 4px 0 #6a4003, 0 8px 10px rgba(0, 0, 0, .65), 0 0 16px #ffb62d99;
+}
+.win-ov.is-done .win-ov__amount b { animation: woPulse .9s ease-out 1; }
+.win-ov__mult {
+  display: inline-flex;
+  align-items: center;
+  gap: .6em;
+  margin: 4px auto 12px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 226, 122, .35);
+  font-weight: 900;
+  color: #ffe27a;
+  font-size: clamp(14px, 4cqw, 19px);
+}
+.win-ov__mult em { font-style: normal; color: #ffd9f0; opacity: .85; font-size: .78em; letter-spacing: .08em; }
+.win-ov__rows { display: flex; flex-direction: column; gap: 7px; margin: 0 0 16px; }
+.win-ov__row {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  text-align: left;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .03));
+  border: 1px solid rgba(255, 226, 122, .22);
+  animation: woRow .5s ease-out both;
+  animation-delay: var(--d, .6s);
+}
+.win-ov__row.no-img { grid-template-columns: 1fr auto; }
+.win-ov__row img { width: 46px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
+.win-ov__row .nm { font-weight: 900; letter-spacing: .06em; color: #fff; font-size: clamp(12px, 3.5cqw, 16px); }
+.win-ov__row .nm small { display: block; margin-top: 2px; font-weight: 700; color: #ffd9f0; opacity: .85; font-size: .76em; letter-spacing: .04em; }
+.win-ov__row b { color: #ffe27a; font-weight: 1000; font-size: clamp(13px, 3.8cqw, 18px); white-space: nowrap; }
+.win-ov__btn {
+  position: relative;
+  width: 100%;
+  min-height: 54px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 1000;
+  letter-spacing: .12em;
+  font-size: clamp(15px, 4.2cqw, 19px);
+  color: #3a0f2c;
+  background: linear-gradient(180deg, #fff7a8, #ffc92e 50%, #f29a12);
+  box-shadow: 0 5px 0 #9a4a13, 0 10px 24px rgba(255, 190, 40, .4), inset 0 2px 0 rgba(255, 255, 255, .7);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.win-ov__btn span { position: relative; z-index: 1; }
+.win-ov__btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #9a4a13; }
+.win-ov__btn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.win-ov:not(.is-done) .win-ov__btn {
+  color: #ffe9a8;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, .06));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 226, 122, .5);
+}
+.win-ov.is-done .win-ov__btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .65), transparent);
+  transform: skewX(-18deg);
+  animation: hc2Shine 2.4s ease-in-out infinite;
+}
+.win-ov__btn.has-timer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: rgba(58, 15, 44, .55);
+  transform-origin: left;
+  animation: woTimer var(--auto-ms, 3s) linear forwards;
+}
+@keyframes woIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes woOut { to { opacity: 0; transform: scale(1.04) } }
+@keyframes woCard { from { opacity: 0; transform: translateY(30px) scale(.82) } to { opacity: 1; transform: none } }
+@keyframes woLetter { from { opacity: 0; transform: translateY(26px) scale(.4) rotate(-8deg) } to { opacity: 1; transform: none } }
+@keyframes woStar { from { opacity: 0; transform: scale(0) rotate(-120deg) } to { opacity: 1; transform: none } }
+@keyframes woRow { from { opacity: 0; transform: translateX(-18px) } to { opacity: 1; transform: none } }
+@keyframes woPulse { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.06) } }
+@keyframes woGlow { from { opacity: .55; transform: translate(-50%, -50%) scale(.92) } to { opacity: 1; transform: translate(-50%, -50%) scale(1.08) } }
+@keyframes woFlash { from { opacity: 1 } to { opacity: 0 } }
+@keyframes woTimer { to { transform: scaleX(0) } }
+
+/* ---------------------------------------------------------------------
+   5. BONUS PAGE — FAST button + respin reset cue + flying coins
+   --------------------------------------------------------------------- */
+.bonus-controls { position: relative; }
+.bonus-fast {
+  position: absolute;
+  left: calc(50% + clamp(54px, 15.5cqw, 76px));
+  top: 50%;
+  translate: 0 -50%;
+  width: clamp(50px, 14cqw, 64px);
+  height: clamp(50px, 14cqw, 64px);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.bonus-fast svg { position: relative; width: 44%; height: auto; color: #ffeaa6; filter: drop-shadow(0 2px 1px #4a0026); }
+.bonus-fast.active svg { animation: chevSlide .7s ease-in-out infinite; }
+.bonus-fast:active { transform: scale(.92); }
+.respins-badge { position: relative; }
+.respins-badge.reset-pop { animation: woPulse .6s ease-out 1; box-shadow: 0 0 22px #ffd24a, 0 4px 12px #000a; }
+.respin-reset-tag {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  translate: -50% 0;
+  padding: 2px 10px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #fff7a8, #f29a12);
+  color: #3a0f2c;
+  font-size: 11px;
+  font-weight: 1000;
+  letter-spacing: .1em;
+  pointer-events: none;
+  animation: resetTag 1.1s ease-out forwards;
+}
+@keyframes resetTag {
+  0% { opacity: 0; transform: translateY(6px) scale(.6) }
+  20% { opacity: 1; transform: translateY(-6px) scale(1.1) }
+  100% { opacity: 0; transform: translateY(-26px) scale(1) }
+}
+.fly-coin {
+  position: absolute;
+  z-index: 25;
+  pointer-events: none;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px #ffd24a) drop-shadow(0 3px 3px #0009);
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game.idle-on:not(.bonus-active) .symbol.coin-3d { animation: none !important; }
+  .game .bonus-cell.has-coin > img { animation: none !important; }
+  .win-ov__rays, .bonus-burst { animation: none !important; }
+}
