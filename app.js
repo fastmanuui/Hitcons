@@ -1798,3 +1798,524 @@ const bootObserver = new MutationObserver(() => {
 });
 bootObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 if (document.body.classList.contains("game-ready")) startIdleFx();
+
+/* =====================================================================
+   Hit Coins 2 — improvements.js
+   Load AFTER script.js (plain <script>, no module/defer mismatch).
+   Everything lives in one IIFE and overrides script.js functions by
+   re-assigning their global bindings, so script.js stays untouched.
+   ===================================================================== */
+(() => {
+  "use strict";
+
+  /* ===================================================================
+     0. Small helpers
+     =================================================================== */
+  const tierOfCoin = name =>
+    (name === "grand.png" || name === "major.png") ? 4 :
+    (name === "minor.png" || name === "mini.png") ? 3 :
+    (name === "crown_coin.png" || /coin_(10|15)/.test(name)) ? 2 : 1;
+  const symName = s => s === "sevens.png" ? "777" : s.replace(".png", "").toUpperCase();
+  const fmtMult = m => Number.isInteger(m) ? String(m) : String(+m.toFixed(2));
+
+  /* ===================================================================
+     1. AUDIO ENGINE (WebAudio only — no files)
+     Own AudioContext so it never disturbs the music engine in script.js.
+     =================================================================== */
+  const Fx = (() => {
+    let ctx = null, master = null, noiseBuf = null, riserState = null, lastWinAt = 0;
+    const enabled = () => (typeof GameAudio === "undefined") || GameAudio.sound;
+
+    function ensure() {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -14; comp.knee.value = 18; comp.ratio.value = 5;
+        comp.attack.value = 0.004; comp.release.value = 0.2;
+        master = ctx.createGain(); master.gain.value = 0.9;
+        master.connect(comp); comp.connect(ctx.destination);
+        noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
+
+    function osc(type, f, t, dur, o = {}) {
+      const { vol = 0.2, a = 0.005, s = 0, slide = null, detune = 0, lp = null, bus = master } = o;
+      const node = ctx.createOscillator(), g = ctx.createGain();
+      node.type = type;
+      node.frequency.setValueAtTime(f, t);
+      if (slide) node.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      node.detune.value = detune;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + a);
+      if (s > 0 && dur * s > a) g.gain.setValueAtTime(vol, t + dur * s);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      let out = node;
+      if (lp) {
+        const fl = ctx.createBiquadFilter();
+        fl.type = "lowpass"; fl.frequency.value = lp;
+        node.connect(fl); out = fl;
+      }
+      out.connect(g); g.connect(bus);
+      node.start(t); node.stop(t + dur + 0.05);
+    }
+    function noise(t, dur, o = {}) {
+      const { vol = 0.2, type = "bandpass", f = 3000, to = null, q = 1, a = 0.01, bus = master } = o;
+      const src = ctx.createBufferSource();
+      src.buffer = noiseBuf; src.loop = true;
+      const fl = ctx.createBiquadFilter();
+      fl.type = type; fl.Q.value = q;
+      fl.frequency.setValueAtTime(f, t);
+      if (to) fl.frequency.exponentialRampToValueAtTime(to, t + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(fl); fl.connect(g); g.connect(bus);
+      src.start(t, Math.random()); src.stop(t + dur + 0.05);
+    }
+    const timp = (t, vol = 0.5, f = 110) => {
+      osc("sine", f * 1.6, t, 0.5, { vol, a: 0.004, slide: f * 0.5 });
+      osc("sine", f, t, 0.7, { vol: vol * 0.8, a: 0.004, slide: f * 0.4 });
+      noise(t, 0.12, { vol: vol * 0.3, type: "lowpass", f: 900, to: 200 });
+    };
+    const brass = (f, t, d, vol = 0.12) =>
+      [-7, 0, 7].forEach(c => osc("sawtooth", f, t, d, { vol: vol / 2, a: 0.03, s: 0.7, detune: c, lp: Math.min(f * 5, 6000) }));
+    const sparkle = (t, n, span, vol = 0.07) => {
+      for (let i = 0; i < n; i++) osc("sine", 2000 + Math.random() * 3200, t + Math.random() * span, 0.22, { vol, a: 0.002 });
+    };
+
+    /* a coin hitting a reel: metallic partials + thunk, higher for richer coins */
+    function coinLand(tier = 1) {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.005;
+      const base = [1568, 1760, 2093, 2349, 2637][Math.min(tier, 4)];
+      osc("sine", base, t, 0.5, { vol: 0.2, a: 0.002 });
+      osc("sine", base * 2.76, t, 0.28, { vol: 0.1, a: 0.002 });
+      osc("sine", base * 5.4, t, 0.14, { vol: 0.05, a: 0.002 });
+      osc("triangle", base * 1.5, t + 0.085, 0.45, { vol: 0.14, a: 0.002 });
+      osc("sine", base * 1.5 * 2.76, t + 0.085, 0.22, { vol: 0.06, a: 0.002 });
+      noise(t, 0.05, { vol: 0.12, type: "highpass", f: 6500 });
+      osc("sine", 200, t, 0.14, { vol: 0.28, a: 0.003, slide: 80 });
+      if (tier >= 3) [0, 0.06, 0.12].forEach((d, i) => osc("sine", base * (2 + i * 0.5), t + 0.16 + d, 0.35, { vol: 0.07 }));
+    }
+    function collectTick(i = 0) {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.005;
+      osc("sine", 1400 + i * 130, t, 0.14, { vol: 0.13, a: 0.002 });
+      osc("sine", 2800 + i * 260, t, 0.08, { vol: 0.05, a: 0.002 });
+    }
+
+    /* suspense: rising saw sweep + shimmer + accelerating heartbeat */
+    function thumpAt(bus, t, v) {
+      osc("sine", 120, t, 0.16, { vol: v, a: 0.003, slide: 48, bus });
+      osc("triangle", 900, t, 0.03, { vol: v * 0.18, a: 0.001, bus });
+    }
+    function riser(ms) {
+      if (!enabled() || !ensure()) return;
+      stopRiser();
+      const t = ctx.currentTime + 0.01, d = ms / 1000;
+      const bus = ctx.createGain(); bus.gain.value = 1; bus.connect(master);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.2, t + d * 0.92);
+      g.gain.linearRampToValueAtTime(0.0001, t + d + 0.1);
+      g.connect(bus);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.Q.value = 5;
+      lp.frequency.setValueAtTime(280, t);
+      lp.frequency.exponentialRampToValueAtTime(5600, t + d);
+      lp.connect(g);
+      const srcs = [];
+      [-9, 0, 9].forEach(c => {
+        const o = ctx.createOscillator();
+        o.type = "sawtooth"; o.detune.value = c;
+        o.frequency.setValueAtTime(98, t);
+        o.frequency.exponentialRampToValueAtTime(784, t + d);
+        o.connect(lp); o.start(t); o.stop(t + d + 0.2); srcs.push(o);
+      });
+      const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+      o2.type = "sine"; g2.gain.value = 0.05;
+      o2.frequency.setValueAtTime(196, t);
+      o2.frequency.exponentialRampToValueAtTime(1568, t + d);
+      o2.connect(g2); g2.connect(g); o2.start(t); o2.stop(t + d + 0.2); srcs.push(o2);
+      const ns = ctx.createBufferSource(), nf = ctx.createBiquadFilter(), ng = ctx.createGain();
+      ns.buffer = noiseBuf; ns.loop = true;
+      nf.type = "highpass";
+      nf.frequency.setValueAtTime(1500, t);
+      nf.frequency.exponentialRampToValueAtTime(8000, t + d);
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(0.12, t + d * 0.95);
+      ng.gain.linearRampToValueAtTime(0.0001, t + d + 0.1);
+      ns.connect(nf); nf.connect(ng); ng.connect(bus);
+      ns.start(t); ns.stop(t + d + 0.2); srcs.push(ns);
+      let tt = 0.15, gap = 0.7;
+      while (tt < d - 0.1) { thumpAt(bus, t + tt, 0.22 + 0.3 * (tt / d)); tt += gap; gap = Math.max(0.14, gap * 0.86); }
+      riserState = { bus, srcs };
+    }
+    function stopRiser() {
+      if (!riserState || !ctx) return;
+      const s = riserState; riserState = null;
+      const n = ctx.currentTime;
+      try { s.bus.gain.cancelScheduledValues(n); s.bus.gain.setTargetAtTime(0, n, 0.04); } catch (e) {}
+      s.srcs.forEach(o => { try { o.stop(n + 0.2); } catch (e) {} });
+    }
+    function anticipateHit() {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.01;
+      osc("sine", 130, t, 0.9, { vol: 0.5, a: 0.004, slide: 36 });
+      noise(t, 0.7, { vol: 0.3, type: "lowpass", f: 2500, to: 200 });
+      [784, 988, 1175, 1568, 1976].forEach((f, i) => {
+        osc("triangle", f, t + i * 0.05, 0.9, { vol: 0.16, a: 0.004, s: 0.2 });
+        osc("sine", f * 2.76, t + i * 0.05, 0.3, { vol: 0.04 });
+      });
+      noise(t + 0.05, 1.1, { vol: 0.16, type: "highpass", f: 5000, to: 9000, a: 0.05 });
+      sparkle(t + 0.2, 10, 0.9);
+    }
+    function anticipateMiss() {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.01;
+      osc("triangle", 330, t, 0.5, { vol: 0.14, a: 0.01, slide: 110 });
+      osc("sine", 165, t, 0.5, { vol: 0.12, a: 0.01, slide: 70 });
+    }
+    function bonusTrigger() {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.01;
+      osc("sine", 150, t, 1, { vol: 0.6, a: 0.004, slide: 34 });
+      noise(t, 0.9, { vol: 0.35, type: "lowpass", f: 1800, to: 120 });
+      [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => {
+        osc("triangle", f, t + 0.1 + i * 0.075, 0.55, { vol: 0.16, a: 0.003 });
+        osc("sine", f * 2.01, t + 0.1 + i * 0.075, 0.25, { vol: 0.05 });
+      });
+      [262, 330, 392, 523].forEach(f => brass(f, t + 0.2, 1.4, 0.06));
+      noise(t + 0.2, 1.2, { vol: 0.15, type: "highpass", f: 4000, to: 9000, a: 0.06 });
+      sparkle(t + 0.7, 10, 1);
+    }
+
+    /* BIG WIN: timpani + brass motif + cymbal swell + coin shimmer (~3 s) */
+    function winBig() {
+      if (!enabled() || !ensure()) return;
+      lastWinAt = performance.now();
+      const t = ctx.currentTime + 0.02;
+      timp(t, 0.55, 110);
+      [[392, 0, 0.16], [392, 0.18, 0.16], [523, 0.36, 0.16], [659, 0.54, 0.5], [784, 1.08, 1.5]]
+        .forEach(([f, o, d]) => { brass(f, t + o, d, 0.15); brass(f / 2, t + o, d, 0.1); });
+      [523, 659].forEach(f => brass(f, t + 1.08, 1.5, 0.1));
+      timp(t + 1.08, 0.6, 98);
+      noise(t + 1.08, 1.6, { vol: 0.2, type: "highpass", f: 5200, to: 9500, a: 0.04 });
+      sparkle(t + 1.2, 14, 1.6, 0.08);
+    }
+    /* MAJOR WIN: timpani roll + sweep, huge impact, full fanfare, choir pad, run (~5.5 s) */
+    function winMajor() {
+      if (!enabled() || !ensure()) return;
+      lastWinAt = performance.now();
+      const t = ctx.currentTime + 0.02;
+      for (let i = 0; i < 8; i++) timp(t + i * 0.2 + i * i * 0.01, 0.3 + i * 0.05, 100 + i * 6);
+      osc("sawtooth", 110, t, 1.6, { vol: 0.14, a: 0.05, s: 0.9, slide: 880, lp: 3000 });
+      noise(t, 1.6, { vol: 0.2, type: "highpass", f: 1500, to: 9000, a: 0.2 });
+      const T = t + 1.65;
+      timp(T, 0.9, 90);
+      osc("sine", 120, T, 1.2, { vol: 0.7, a: 0.004, slide: 34 });
+      noise(T, 1.8, { vol: 0.35, type: "highpass", f: 3500, to: 8000, a: 0.01 });
+      [[523, 0, 0.22], [659, 0.24, 0.22], [784, 0.48, 0.22], [1047, 0.72, 1.9]].forEach(([f, o, d]) => {
+        brass(f, T + o, d, 0.17); brass(f / 2, T + o, d, 0.12); brass(f * 2, T + o, d, 0.05);
+      });
+      [262, 330, 392, 523].forEach(f => brass(f, T + 0.72, 2.2, 0.07));
+      [523, 659, 784, 1047].forEach((f, i) => osc("triangle", f, T + 0.72, 2.4, { vol: 0.06, a: 0.5, s: 0.7, detune: i * 3 }));
+      timp(T + 0.72, 0.8, 98); timp(T + 0.96, 0.5, 110);
+      [1047, 1319, 1568, 2093, 2637, 3136].forEach((f, i) => osc("triangle", f, T + 2.0 + i * 0.08, 0.5, { vol: 0.12, a: 0.003 }));
+      sparkle(T + 0.3, 26, 3.2, 0.09);
+    }
+    function countTick(p) {
+      if (!enabled() || !ensure()) return;
+      const t = ctx.currentTime + 0.003;
+      osc("triangle", 600 + 1100 * p, t, 0.045, { vol: 0.07, a: 0.002 });
+    }
+    function winSound(tier) { (tier === "major" ? winMajor : winBig)(); }
+
+    document.addEventListener("pointerdown", () => ensure(), { once: true });
+    return {
+      coinLand, collectTick, riser, stopRiser, anticipateHit, anticipateMiss,
+      bonusTrigger, winBig, winMajor, winSound, countTick,
+      get lastWinAt() { return lastWinAt; }
+    };
+  })();
+  window.HC2Fx = Fx;
+
+  /* Route script.js sound names to the richer sounds. */
+  (() => {
+    const orig = GameAudio.play;
+    let lastCoin = 0, lastBonus = 0;
+    GameAudio.play = function (name) {
+      const now = performance.now();
+      if (name === "coin")  { if (now - lastCoin < 90) return; lastCoin = now; return Fx.coinLand(1); }
+      if (name === "bonus") { if (now - lastBonus < 1500) return; lastBonus = now; return Fx.bonusTrigger(); }
+      if (name === "bigWin") { if (now - Fx.lastWinAt < 1200) return; return Fx.winBig(); }
+      return orig.call(GameAudio, name);
+    };
+  })();
+
+  /* a11y: announce the win banner */
+  banner.setAttribute("role", "status");
+  banner.setAttribute("aria-live", "polite");
+
+  /* ===================================================================
+     2. 3D COINS — tag every coin sitting on a reel (CSS animates them
+        only while the game is idle).
+     =================================================================== */
+  function tagCoin(img) {
+    if (!(img instanceof HTMLImageElement) || !img.classList.contains("symbol")) return;
+    if (img.closest(".reel-strip")) return;
+    const n = (img.getAttribute("src") || "").split("/").pop();
+    if (!isCoin(n)) return;
+    img.classList.add("coin-3d");
+    img.style.setProperty("--coin-delay", (-Math.random() * 3.4).toFixed(2) + "s");
+  }
+  document.querySelectorAll(".reel img.symbol").forEach(tagCoin);
+  const frameEl = document.querySelector(".reel-frame");
+  if (frameEl) {
+    new MutationObserver(recs => {
+      recs.forEach(r => r.addedNodes.forEach(n => {
+        if (n.nodeType !== 1) return;
+        if (n.tagName === "IMG") tagCoin(n); else n.querySelectorAll && n.querySelectorAll("img.symbol").forEach(tagCoin);
+      }));
+    }).observe(frameEl, { childList: true, subtree: true });
+  }
+
+  /* ===================================================================
+     3. ANTICIPATION: bottom-row glow of the 3rd reel + riser sound,
+        coin sound on EVERY landing, and the "tease cut short" bug fix.
+     =================================================================== */
+  function addGlow(reel, ms) {
+    removeGlow();
+    const g = document.createElement("div");
+    g.className = "ant-glow";
+    g.style.setProperty("--ant-ms", ms + "ms");
+    reel.appendChild(g);
+  }
+  function removeGlow() { document.querySelectorAll(".ant-glow").forEach(e => e.remove()); }
+
+  const _clearSession = clearSession;
+  clearSession = function (s) {
+    try { Fx.stopRiser(); } catch (e) {}
+    removeGlow();
+    return _clearSession(s);
+  };
+
+  /* Full replacement: anticipation now lasts the FULL duration. In script.js the
+     right reel's own timer (~3.9 s) fired before the 5 s anticipation timer. */
+  maybeStartAnticipation = function (session) {
+    if (session.third < 0 || session.anticipating || session.landed[session.third]) return;
+    const others = [0, 1, 2].filter(i => i !== session.third);
+    if (!others.every(i => session.landed[i])) return;
+    session.anticipating = true;
+    session.antStart = performance.now();
+    session.antDur = fastMode ? 3200 : ANTICIPATION_MS;
+    game.classList.add("anticipating");
+    const reel = reels[session.third];
+    reel.classList.add("anticipate-reel");
+    startReelStripSpin(reel, session.third, session);
+    markCoins(session, "coin-wait");
+    Fx.riser(session.antDur);
+    addGlow(reel, session.antDur);
+    spawnAnticipateSpark(session.third);
+    banner.textContent = "ONE MORE COIN!";
+    banner.classList.add("show", "suspense");
+    session.timers.push(setTimeout(() => landReel(session, session.third), session.antDur));
+  };
+
+  const _landReel = landReel;
+  landReel = function (session, i) {
+    if (session.landed[i] || session.finished) return _landReel(session, i);
+    const isAnt = session.anticipating && i === session.third;
+    // ignore the early reel timer; the anticipation timer (or a manual stop) lands it
+    if (isAnt && session.antStart && performance.now() - session.antStart < session.antDur - 60) return;
+    _landReel(session, i);
+    if (isAnt) {
+      Fx.stopRiser();
+      removeGlow();
+      session.finalSets[i].some(isCoin) ? Fx.anticipateHit() : Fx.anticipateMiss();
+    } else if (session.finalSets && session.finalSets[i]) {
+      session.finalSets[i].forEach((n, row) => {
+        if (isCoin(n)) setTimeout(() => Fx.coinLand(tierOfCoin(n)), row * 70);
+      });
+    }
+  };
+
+  /* ===================================================================
+     4. WIN OVERLAYS — Big win & Major win (also used for the bonus result)
+     =================================================================== */
+  const TIER = {
+    win:   { label: "YOU WIN",   count: 1500, badge: 2, cls: "win" },
+    big:   { label: "BIG WIN",   count: 2400, badge: 3, cls: "big",   auto: 3600 },
+    major: { label: "MAJOR WIN", count: 4000, badge: 5, cls: "major", auto: 6500 }
+  };
+
+  function groupWins(wins) {
+    const m = new Map();
+    wins.forEach(w => {
+      const g = m.get(w.symbol) || { symbol: w.symbol, lines: 0, mult: w.multiplier, amount: 0 };
+      g.lines++; g.amount += w.amount; m.set(w.symbol, g);
+    });
+    return [...m.values()].sort((a, b) => b.amount - a.amount);
+  }
+  /* Major: stars or 777 on 3+ lines, bells on 4+ lines */
+  function isMajorWin(wins) {
+    const c = s => wins.filter(w => w.symbol === s).length;
+    return c("stars.png") >= 3 || c("sevens.png") >= 3 || c("bells.png") >= 4;
+  }
+
+  /* Canvas particles: spinning gold coins fountain + confetti */
+  function startWinFx(canvas, power) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return () => {};
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    const W = canvas.width = Math.max(2, Math.round(rect.width * dpr));
+    const H = canvas.height = Math.max(2, Math.round(rect.height * dpr));
+    const c = canvas.getContext("2d");
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const sprite = document.createElement("canvas"); sprite.width = sprite.height = 64;
+    (() => {
+      const s = sprite.getContext("2d");
+      const g = s.createRadialGradient(24, 22, 4, 32, 32, 30);
+      g.addColorStop(0, "#fff6b0"); g.addColorStop(.6, "#ffcf3a"); g.addColorStop(1, "#b8730a");
+      s.fillStyle = g; s.beginPath(); s.arc(32, 32, 30, 0, 6.283); s.fill();
+      s.lineWidth = 5; s.strokeStyle = "#8a5200"; s.stroke();
+      s.beginPath(); s.arc(32, 32, 19, 0, 6.283); s.lineWidth = 3; s.strokeStyle = "#fff0a0aa"; s.stroke();
+    })();
+    const COLORS = ["#ffd24a", "#fff3a0", "#ff4fa3", "#7de3ff", "#b98bff"];
+    const P = [];
+    const coin = (x, y, vx, vy) => P.push({ t: 0, x, y, vx, vy, s: rnd(.016, .03) * W, r: rnd(0, 6.28), vr: rnd(-4, 4), f: rnd(0, 6.28), vf: rnd(6, 12) });
+    const conf = () => P.push({ t: 1, x: rnd(0, W), y: -12 * dpr, vx: rnd(-40, 40) * dpr, vy: rnd(.12, .3) * H, w: rnd(5, 10) * dpr, h: rnd(8, 15) * dpr, col: COLORS[(Math.random() * COLORS.length) | 0], r: rnd(0, 6.28), vr: rnd(-8, 8), f: rnd(0, 6.28), vf: rnd(4, 9) });
+    function fountain() {
+      const n = Math.round(10 * power);
+      for (let i = 0; i < n; i++) {
+        coin(W * .06, H * 1.02, rnd(.12, .4) * W, -rnd(1, 1.6) * H);
+        coin(W * .94, H * 1.02, -rnd(.12, .4) * W, -rnd(1, 1.6) * H);
+      }
+    }
+    fountain();
+    let last = performance.now(), acc = 0, t0 = last, raf = 0, alive = true;
+    const G = 1.9 * H;
+    function frame(now) {
+      if (!alive || !canvas.isConnected) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now;
+      const age = (now - t0) / 1000;
+      acc += dt;
+      if (acc > .55 && age < (power > 1.5 ? 4.5 : 2.6)) { acc = 0; fountain(); }
+      if (P.length < 240) for (let i = 0; i < power * 1.1; i++) if (Math.random() < .55) conf();
+      c.clearRect(0, 0, W, H);
+      for (let i = P.length - 1; i >= 0; i--) {
+        const p = P[i];
+        p.vy += (p.t ? 0 : G) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt; p.f += p.vf * dt;
+        if (p.y > H + 60 * dpr) { P.splice(i, 1); continue; }
+        c.save(); c.translate(p.x, p.y); c.rotate(p.t ? p.r : p.r * .15);
+        const sx = Math.cos(p.f); c.scale(p.t ? 1 : sx, p.t ? sx : 1);
+        if (p.t) { c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); }
+        else c.drawImage(sprite, -p.s, -p.s, p.s * 2, p.s * 2);
+        c.restore();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { alive = false; cancelAnimationFrame(raf); };
+  }
+
+  /**
+   * opts: tier, wins?, payout, mult?, parent?, kicker?, label?, rowsHtml?,
+   *       buttonLabel?, noAuto?, onClose?
+   */
+  function showWinOverlay(o) {
+    const cfg = TIER[o.tier] || TIER.win;
+    const host = o.parent || game;
+    const total = Number(o.payout) || 0;
+    const mult = o.mult != null ? Number(o.mult) : (betAmount ? total / betAmount : 0);
+    const label = o.label || cfg.label;
+    const wins = o.wins || [];
+    const groups = groupWins(wins);
+    const kicker = o.kicker != null ? o.kicker : (wins.length ? `${wins.length} WINNING LINE${wins.length > 1 ? "S" : ""}` : "");
+    const rows = o.rowsHtml || groups.map((g, i) =>
+      `<div class="win-ov__row" style="--d:${(.55 + i * .14).toFixed(2)}s">
+         <img src="assets/${g.symbol}" alt="">
+         <span class="nm">${symName(g.symbol)}<small>${g.lines} LINE${g.lines > 1 ? "S" : ""} × ${g.mult} BET</small></span>
+         <b>${money(g.amount)}</b>
+       </div>`).join("");
+    const letters = [...label].map((ch, i) => `<i style="--i:${i}">${ch === " " ? "&nbsp;" : ch}</i>`).join("");
+    const stars = Array.from({ length: cfg.badge }, (_, i) => `<i style="--i:${i}">★</i>`).join("");
+    const autoMs = o.noAuto ? 0 : ((cfg.auto && (o.tier === "big" || auto)) ? cfg.auto : 0);
+
+    const el = document.createElement("div");
+    el.className = `win-ov win-ov--${cfg.cls}`;
+    el.innerHTML = `
+      <canvas class="win-ov__fx"></canvas>
+      <div class="win-ov__rays"></div>
+      <div class="win-ov__glow"></div>
+      <div class="win-ov__card" role="dialog" aria-modal="true" aria-label="${label}">
+        <div class="win-ov__badge" aria-hidden="true">${stars}</div>
+        <p class="win-ov__kicker">${kicker}</p>
+        <h2 class="win-ov__title">${letters}</h2>
+        <div class="win-ov__amount"><small>ETB</small><b data-amount>0.00</b></div>
+        <div class="win-ov__mult">×<span data-mult>0</span><em>BET ${money(betAmount)}</em></div>
+        <div class="win-ov__rows">${rows}</div>
+        <button type="button" class="win-ov__btn"><span>TAP TO SKIP</span></button>
+      </div>`;
+    host.appendChild(el);
+
+    const amtEl = el.querySelector("[data-amount]"), multEl = el.querySelector("[data-mult]");
+    const btn = el.querySelector(".win-ov__btn"), btnTxt = btn.querySelector("span");
+    const stopFx = startWinFx(el.querySelector("canvas"), o.tier === "major" ? 2 : o.tier === "big" ? 1.2 : .7);
+    let done = false, closed = false, raf = 0, tickAt = 0, autoT = 0;
+    const start = performance.now() + 500;   // let the title land first
+
+    const paint = p => { amtEl.textContent = (total * p).toFixed(2); multEl.textContent = p < 1 ? String(Math.round(mult * p)) : fmtMult(mult); };
+    function finishCount() {
+      if (done) return;
+      done = true; cancelAnimationFrame(raf); paint(1);
+      el.classList.add("is-done");
+      btnTxt.textContent = o.buttonLabel || "COLLECT";
+      haptic(20);
+      if (autoMs) { btn.style.setProperty("--auto-ms", autoMs + "ms"); btn.classList.add("has-timer"); autoT = setTimeout(close, autoMs); }
+    }
+    function frame(now) {
+      if (closed) return;
+      const p = Math.max(0, Math.min(1, (now - start) / cfg.count));
+      const e = 1 - Math.pow(1 - p, 3);
+      paint(e);
+      if (p > 0 && now - tickAt > 60) { tickAt = now; Fx.countTick(e); }
+      if (p < 1) raf = requestAnimationFrame(frame); else finishCount();
+    }
+    function close() {
+      if (closed) return;
+      closed = true;
+      cancelAnimationFrame(raf); clearTimeout(autoT); stopFx();
+      document.removeEventListener("keydown", onKey);
+      el.classList.add("is-closing");
+      setTimeout(() => { el.remove(); if (o.onClose) o.onClose(); }, 280);
+    }
+    const act = () => (done ? close() : finishCount());
+    function onKey(e) { if (e.key === "Enter" || e.key === " " || e.key === "Escape") { e.preventDefault(); act(); } }
+    btn.addEventListener("click", act);
+    el.addEventListener("click", e => { if (!done && !btn.contains(e.target)) finishCount(); });
+    document.addEventListener("keydown", onKey);
+    raf = requestAnimationFrame(frame);
+
+    Fx.winSound(o.tier);
+    if (host === game && o.tier !== "win") {
+      game.classList.add("screen-shake");
+      setTimeout(() => game.classList.remove("screen-shake"), 600);
+    }
+    haptic(o.tier === "major" ? [30, 40, 30, 40, 60] : [20, 30, 20]);
+    btn.focus({ preventScroll: true });
+    return el;
+  }
+
+  /* ===================================================================
+     5. finishSpin — Big/Major overlays first, then the bonus.
+     =================================================================== */
+  finishSpin = function (session) {
+    if (activeSpin !== session || session.finished || !session.serverResult) return;
